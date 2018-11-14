@@ -1,0 +1,3 @@
+my_thr_init.c[87] [tid: 1807544192l]: Initializing thread environment...
+2
+6
