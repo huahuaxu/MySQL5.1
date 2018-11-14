@@ -1,6 +1,0 @@
-select 1;
-1
-1
-SHOW VARIABLES like 'slave_skip_errors';
-Variable_name	Value
-slave_skip_errors	OFF

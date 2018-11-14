@@ -1,9 +1,0 @@
-./configure --prefix=/usr/local/mysql //指定mysql安装路
- make && make install    //编译并安装
-
-./sql/mysqld --basedir=/home/xhh/C/mysql-5.1.54/ --datadir=/opt/mysql/data --user=mysql --log-error=/opt/mysql/mysqld.err --open-files-limit=8192 --pid-file=/opt/mysql/mysqld.pid --socket=/tmp/mysqld.sock --port=3306 --skip-grant-tables
-
-./sql/mysqld --basedir=/home/xhh/C/mysql-5.1.54/ --datadir=/opt/mysql/data --user=mysql --log-error=/opt/mysql/mysqld.err --open-files-limit=8192 --pid-file=/opt/mysql/mysqld.pid --socket=/tmp/mysqld.sock --port=3306 --bind-address=10.2.132.211 
-
-
-./sql/mysqld --basedir=/home/huahua.xhh/mysql/ --datadir=/home/huahua.xhh/mysql/data --user=huahua.xhh --log-error=/home/huahua.xhh/mysql/mysqld.err --open-files-limit=8192 --pid-file=/home/huahua.xhh/mysql/mysqld.pid --socket=/home/huahua.xhh/tmp/mysqld.sock --port=5506 --bind-address=10.232.135.20 --skip-grant
