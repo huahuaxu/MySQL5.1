@@ -1043,9 +1043,11 @@ srv_general_init(void)
 /* Maximum allowable purge history length.  <=0 means 'infinite'. */
 UNIV_INTERN ulong	srv_max_purge_lag		= 0;
 
-/*********************************************************************//**
+/*********************************************************************/
+/**
 Puts an OS thread to wait if there are too many concurrent threads
-(>= srv_thread_concurrency) inside InnoDB. The threads wait in a FIFO queue. */
+(>= srv_thread_concurrency) inside InnoDB. The threads wait in a FIFO queue.
+*/
 UNIV_INTERN
 void
 srv_conc_enter_innodb(
@@ -1058,7 +1060,7 @@ srv_conc_enter_innodb(
 	ulint			i;
 
 	if (trx->mysql_thd != NULL
-	    && thd_is_replication_slave_thread(trx->mysql_thd)) {
+	    && thd_is_replication_slave_thread(trx->mysql_thd)) { //主备复制线程不受InnoDB内部并发数控制
 
 		UT_WAIT_FOR(srv_conc_n_threads
 			    < (lint)srv_thread_concurrency,
@@ -1066,6 +1068,10 @@ srv_conc_enter_innodb(
 
 		return;
 	}
+
+	fprintf(stderr, "%s[%d] [tid:%lu]: trx.n_tickets_to_enter_innodb = %lu, trx.declared_to_be_inside_innodb = %d, srv_conc_n_threads = %d, srv_thread_concurrency = %lu.\n",
+			__FILE__, __LINE__, pthread_self(),
+			trx->n_tickets_to_enter_innodb, trx->declared_to_be_inside_innodb, srv_conc_n_threads, srv_thread_concurrency);
 
 	/* If trx has 'free tickets' to enter the engine left, then use one
 	such ticket */
@@ -1099,6 +1105,10 @@ retry:
 		trx->n_tickets_to_enter_innodb = SRV_FREE_TICKETS_TO_ENTER;
 
 		os_fast_mutex_unlock(&srv_conc_mutex);
+
+		fprintf(stderr, "%s[%d] [tid:%lu]: trx.n_tickets_to_enter_innodb = %lu, trx.declared_to_be_inside_innodb = %d, srv_conc_n_threads = %d.\n",
+					__FILE__, __LINE__, pthread_self(),
+					trx->n_tickets_to_enter_innodb, trx->declared_to_be_inside_innodb, srv_conc_n_threads);
 
 		return;
 	}

@@ -2872,7 +2872,7 @@ os_file_get_status(
 The function os_file_dirname returns a directory component of a
 null-terminated pathname string.  In the usual case, dirname returns
 the string up to, but not including, the final '/', and basename
-is the component following the final '/'.  Trailing '/' charac­
+is the component following the final '/'.  Trailing '/' characï¿½
 ters are not counted as part of the pathname.
 
 If path does not contain a slash, dirname returns the string ".".
@@ -4126,6 +4126,10 @@ consecutive_loop:
 				    slot->offset, slot->offset_high,
 				    total_len);
 	} else {
+//		fprintf(stderr, "%s[%d] [tid:%lu]: InnoDB I/O Handler Thread %lu doing i/o of type [OS_FILE_READ] at {file = %s, offset = %lu, offset_high = %lu}\n",
+//				__FILE__, __LINE__, pthread_self(), global_segment,
+//				slot->name, slot->offset, slot->offset_high);
+
 		ret = os_file_read(slot->file, combined_buf,
 				   slot->offset, slot->offset_high, total_len);
 	}
@@ -4195,7 +4199,11 @@ wait_for_io:
 recommended_sleep:
 	srv_set_io_thread_op_info(global_segment, "waiting for i/o request");
 
+	fprintf(stderr, "%s[%d] [tid:%lu]: InnoDB I/O Handler Thread %lu is waiting for i/o request...\n", __FILE__, __LINE__, pthread_self(), segment);
+
 	os_event_wait(os_aio_segment_wait_events[global_segment]);
+
+	fprintf(stderr, "%s[%d] [tid:%lu]: InnoDB I/O Handler Thread %lu wakes up...\n", __FILE__, __LINE__, pthread_self(), segment);
 
 	if (os_aio_print_debug) {
 		fprintf(stderr,

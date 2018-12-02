@@ -119,6 +119,8 @@ struct ins_node_struct{
 	ulint		state;	/*!< node execution state */
 	dict_index_t*	index;	/*!< NULL, or the next index where the index
 				entry should be inserted */
+
+	//表的所有索引值
 	dtuple_t*	entry;	/*!< NULL, or entry to insert in the index;
 				after a successful insert of the entry,
 				this should be reset to NULL */

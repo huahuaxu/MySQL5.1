@@ -4657,7 +4657,7 @@ int handler::ha_write_row(uchar *buf)
 
   sql_print_information("%s[%d] [tid:%lu]: Writing a record for Insert...", __FILE__, __LINE__, pthread_self());
 
-  if (unlikely(error= write_row(buf)))
+  if (unlikely(error= write_row(buf)))  //调用底层对应的存储引擎
     DBUG_RETURN(error);
 
   sql_print_information("%s[%d] [tid:%lu]: Writing Write_rows_log_event for Insert...", __FILE__, __LINE__, pthread_self());

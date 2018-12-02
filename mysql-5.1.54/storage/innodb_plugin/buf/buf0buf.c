@@ -701,6 +701,8 @@ buf_chunk_init(
 	byte*		frame;
 	ulint		i;
 
+	fprintf(stderr, "%s[%d] [tid:%lu]: Create and Initialize the Memory Chunk in the Buffer Pool...\n", __FILE__, __LINE__, pthread_self());
+
 	/* Round down to a multiple of page size,
 	although it already should be. */
 	mem_size = ut_2pow_round(mem_size, UNIV_PAGE_SIZE);
@@ -709,6 +711,8 @@ buf_chunk_init(
 				  + (UNIV_PAGE_SIZE - 1), UNIV_PAGE_SIZE);
 
 	chunk->mem_size = mem_size;
+
+	fprintf(stderr, "%s[%d] [tid:%lu]: Try to allocate Memory for the Chunk{mem_size = %lu}.\n", __FILE__, __LINE__, pthread_self(), mem_size);
 	chunk->mem = os_mem_alloc_large(&chunk->mem_size);
 
 	if (UNIV_UNLIKELY(chunk->mem == NULL)) {
@@ -744,6 +748,8 @@ buf_chunk_init(
 	/* Init block structs and assign frames for them. Then we
 	assign the frames to the first blocks (we already mapped the
 	memory above). */
+
+	fprintf(stderr, "%s[%d] [tid:%lu]: Try to initialize the blocks in the Chunk{blocks = %lu}.\n", __FILE__, __LINE__, pthread_self(), chunk->size);
 
 	block = chunk->blocks;
 
@@ -951,6 +957,9 @@ buf_pool_init(void)
 	ulint		i;
 
 	buf_pool = mem_zalloc(sizeof(buf_pool_t));
+
+	fprintf(stderr, "%s[%d] [tid:%lu]: Creating/Initializing the Buffer Pool...\n", __FILE__, __LINE__, pthread_self());
+
 
 	/* 1. Initialize general fields
 	------------------------------- */

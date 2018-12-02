@@ -74,6 +74,8 @@ ins_node_create(
 {
 	ins_node_t*	node;
 
+	fprintf(stderr, "%s[%d] [tid: %lu]: Creating an insert node struct for table {%s}...\n", __FILE__, __LINE__, pthread_self(), table? table->name:"NULL");
+
 	node = mem_heap_alloc(heap, sizeof(ins_node_t));
 
 	node->common.type = QUE_NODE_INSERT;
@@ -1977,7 +1979,7 @@ row_ins_index_entry_low(
 				depending on whether we wish optimistic or
 				pessimistic descent down the index tree */
 	dict_index_t*	index,	/*!< in: index */
-	dtuple_t*	entry,	/*!< in/out: index entry to insert */
+	dtuple_t*	entry,	//索引值 /*!< in/out: index entry to insert */
 	ulint		n_ext,	/*!< in: number of externally stored columns */
 	que_thr_t*	thr)	/*!< in: query thread */
 {
@@ -2225,8 +2227,11 @@ row_ins_index_entry_set_vals(
 
 		field = dtuple_get_nth_field(entry, i);
 		ind_field = dict_index_get_nth_field(index, i);
+
 		row_field = dtuple_get_nth_field(row, ind_field->col->ind);
 		len = dfield_get_len(row_field);
+
+		fprintf(stderr, "%s[%d] [tid: %lu]: Setting the value of index column {%s} in index {%s}...\n", __FILE__, __LINE__, pthread_self(), ind_field->name, index->name);
 
 		/* Check column prefix indexes */
 		if (ind_field->prefix_len > 0
@@ -2268,10 +2273,12 @@ row_ins_index_entry_step(
 
 	ut_ad(dtuple_check_typed(node->row));
 
+	//从数据行中复制需要的索引值
 	row_ins_index_entry_set_vals(node->index, node->entry, node->row);
 
 	ut_ad(dtuple_check_typed(node->entry));
 
+	//将索引写入索引页中
 	err = row_ins_index_entry(node->index, node->entry, 0, TRUE, thr);
 
 	return(err);

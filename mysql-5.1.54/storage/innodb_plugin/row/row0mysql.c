@@ -475,12 +475,13 @@ row_mysql_convert_row_to_innobase(
 			}
 		}
 
+		//复制一个列的值到InnoDB的一行中
 		row_mysql_store_col_in_innobase_format(
 			dfield,
 			prebuilt->ins_upd_rec_buff + templ->mysql_col_offset,
 			TRUE, /* MySQL row format data */
-			mysql_rec + templ->mysql_col_offset,
-			templ->mysql_col_len,
+			mysql_rec + templ->mysql_col_offset, //列值的开始偏移位置
+			templ->mysql_col_len,                //列值的长度
 			dict_table_is_comp(prebuilt->table));
 next_column:
 		;
@@ -835,9 +836,11 @@ row_get_prebuilt_insert_row(
 				prebuilt->heap, prebuilt->mysql_row_len);
 		}
 
+		//申请表的列信息存储空间
 		row = dtuple_create(prebuilt->heap,
 				    dict_table_get_n_cols(table));
 
+		//拷贝表的列信息到当前存储引擎中
 		dict_table_copy_types(row, table);
 
 		ins_node_set_new_row(node, row);
@@ -1134,7 +1137,7 @@ row_insert_for_mysql(
 		node = prebuilt->ins_node;
 	}
 
-	//将一行MySQL格式的记录转换成InnoDB格式的记录并存储
+	//将一行MySQL格式的记录转换成InnoDB格式的记录并存储到一个节点中
 	row_mysql_convert_row_to_innobase(node->row, prebuilt, mysql_rec);
 
 	savept = trx_savept_take(trx);
@@ -1154,6 +1157,7 @@ run_again:
 	thr->run_node = node;
 	thr->prev_node = node;
 
+	//写一行数据到数据页(聚簇索引页)和索引页
 	row_ins_step(thr);
 
 	err = trx->error_state;

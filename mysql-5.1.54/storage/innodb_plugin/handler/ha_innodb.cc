@@ -580,16 +580,18 @@ thd_is_replication_slave_thread(
 	return((ibool) thd_slave_thread((THD*) thd));
 }
 
-/******************************************************************//**
-Save some CPU by testing the value of srv_thread_concurrency in inline
-functions. */
+/******************************************************************/
+/**
+ * Save some CPU by testing the value of srv_thread_concurrency in inline functions.
+ * InnoDB存储引擎底层的并发控制(可能会等待)
+*/
 static inline
 void
 innodb_srv_conc_enter_innodb(
 /*=========================*/
 	trx_t*	trx)	/*!< in: transaction handle */
 {
-	if (UNIV_LIKELY(!srv_thread_concurrency)) {
+	if (UNIV_LIKELY(!srv_thread_concurrency)) {//没有开启并发控制
 
 		return;
 	}
@@ -4716,6 +4718,8 @@ ha_innobase::write_row(
 
 	sql_command = thd_sql_command(user_thd);
 
+	sql_print_information("%s[%d] [tid: %lu]: sql_command = %lu, num_write_row = %lu, timestamp_auto_set_type = %d.", __FILE__, __LINE__, pthread_self(), sql_command, num_write_row, table->timestamp_field_type);
+
 	if ((sql_command == SQLCOM_ALTER_TABLE
 	     || sql_command == SQLCOM_OPTIMIZE
 	     || sql_command == SQLCOM_CREATE_INDEX
@@ -4825,7 +4829,7 @@ no_commit:
 		build_template(prebuilt, NULL, table, ROW_MYSQL_WHOLE_ROW);
 	}
 
-	innodb_srv_conc_enter_innodb(prebuilt->trx);
+	innodb_srv_conc_enter_innodb(prebuilt->trx); //InnoDB存储引擎底层的并发控制(可能会等待)
 
 	error = row_insert_for_mysql((byte*) record, prebuilt);
 
@@ -11089,6 +11093,9 @@ static struct st_mysql_sys_var* innobase_system_variables[]= {
   NULL
 };
 
+/**
+ * 定义InnoDB存储引擎插件
+ */
 mysql_declare_plugin(innodb_plugin)
 {
   MYSQL_STORAGE_ENGINE_PLUGIN,

@@ -471,7 +471,7 @@ io_handler_thread(
 		os_thread_pf(os_thread_get_curr_id()));
 #endif
 
-	fprintf(stderr, "%s[%d] [tid:%lu]: InnoDB I/O Handler Thread %lu startup...\n", __FILE__, __LINE__, pthread_self(), segment);
+	fprintf(stderr, "%s[%d] [tid:%lu]: InnoDB I/O Handler Thread %lu startup{os_aio_use_native_aio = %d}...\n", __FILE__, __LINE__, pthread_self(), segment, os_aio_use_native_aio);
 
 	while (srv_shutdown_state != SRV_SHUTDOWN_EXIT_THREADS) {
 		fil_aio_wait(segment);
@@ -1235,7 +1235,7 @@ innobase_start_or_create_for_mysql(void)
 	}
 #endif
 
-	fprintf(stderr, "%s[%d] [tid:%lu]: srv_buf_pool_size = %u, srv_max_n_threads = %u.\n", __FILE__, __LINE__, pthread_self(), srv_buf_pool_size, srv_max_n_threads);
+	fprintf(stderr, "%s[%d] [tid:%lu]: srv_buf_pool_size = %u, srv_max_n_threads = %u, srv_thread_concurrency = %lu.\n", __FILE__, __LINE__, pthread_self(), srv_buf_pool_size, srv_max_n_threads, srv_thread_concurrency);
 
 
 	err = srv_boot();

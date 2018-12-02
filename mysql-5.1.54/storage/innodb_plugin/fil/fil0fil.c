@@ -4470,7 +4470,7 @@ fil_aio_wait(
 
 	ut_ad(fil_validate());
 
-	if (os_aio_use_native_aio) {
+	if (os_aio_use_native_aio) {  //使用操作系统原生的异步io方式
 		srv_set_io_thread_op_info(segment, "native aio handle");
 #ifdef WIN_ASYNC_IO
 		ret = os_aio_windows_handle(segment, 0, &fil_node,
@@ -4479,7 +4479,7 @@ fil_aio_wait(
 		ret = 0; /* Eliminate compiler warning */
 		ut_error;
 #endif
-	} else {
+	} else {//使用模拟的异步io方式
 		srv_set_io_thread_op_info(segment, "simulated aio handle");
 
 		ret = os_aio_simulated_handle(segment, &fil_node,

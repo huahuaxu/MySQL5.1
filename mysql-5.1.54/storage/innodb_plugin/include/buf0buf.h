@@ -1316,6 +1316,7 @@ struct buf_pool_stat_struct{
 NOTE! The definition appears here only for other modules of this
 directory (buf) to see it. Do not use from outside! */
 
+//InnoDB存储引擎中缓冲池的数据结构
 struct buf_pool_struct{
 
 	/** @name General fields */
@@ -1338,6 +1339,8 @@ struct buf_pool_struct{
 	time_t		last_printout_time;
 					/*!< when buf_print_io was last time
 					called */
+
+	//缓冲池的统计数据
 	buf_pool_stat_t	stat;		/*!< current statistics */
 	buf_pool_stat_t	old_stat;	/*!< old statistics */
 
