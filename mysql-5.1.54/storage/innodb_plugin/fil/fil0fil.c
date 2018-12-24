@@ -1562,6 +1562,8 @@ fil_open_log_and_system_tablespace_files(void)
 	fil_space_t*	space;
 	fil_node_t*	node;
 
+	fprintf(stderr, "%s[%d] [tid:%lu]: Opening all log files and system tablespace data files...\n", __FILE__, __LINE__, pthread_self());
+
 	mutex_enter(&fil_system->mutex);
 
 	space = UT_LIST_GET_FIRST(fil_system->space_list);
@@ -1572,9 +1574,13 @@ fil_open_log_and_system_tablespace_files(void)
 
 			while (node != NULL) {
 				if (!node->open) {
+
+					fprintf(stderr, "%s[%d] [tid:%lu]: Opening file {space_id = %u, path = %s}.\n", __FILE__, __LINE__, pthread_self(), space->id, node->name);
+
 					fil_node_open_file(node, fil_system,
 							   space);
 				}
+
 				if (fil_system->max_n_open
 				    < 10 + fil_system->n_open) {
 					fprintf(stderr,

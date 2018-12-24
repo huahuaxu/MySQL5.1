@@ -1627,8 +1627,12 @@ bool sql_exchange::escaped_given(void)
 bool select_send::send_fields(List<Item> &list, uint flags)
 {
   bool res;
+
+  sql_print_information("%s[%d] [tid:%lu]: Sending fields header to client(%s)...", __FILE__, __LINE__, pthread_self(), thd->net.vio? thd->net.vio->_debug_ip_port:"");
+
   if (!(res= thd->protocol->send_fields(&list, flags)))
     is_result_set_started= 1;
+
   return res;
 }
 
@@ -1670,6 +1674,8 @@ void select_send::cleanup()
 
 bool select_send::send_data(List<Item> &items)
 {
+	sql_print_information("%s[%d] [tid:%lu]: Sending 1 row data to client(%s)...", __FILE__, __LINE__, pthread_self(), thd->net.vio? thd->net.vio->_debug_ip_port:"");
+
   if (unit->offset_limit_cnt)
   {						// using limit offset,count
     unit->offset_limit_cnt--;
@@ -1693,18 +1699,23 @@ bool select_send::send_data(List<Item> &items)
   Item *item;
   while ((item=li++))
   {
+
+	  sql_print_information("%s[%d] [tid:%lu]: Sending 1 item value {type = %d, name = %s} to client(%s)...", __FILE__, __LINE__, pthread_self(), item->type(), item->full_name(), thd->net.vio? thd->net.vio->_debug_ip_port:"");
+
     if (item->send(protocol, &buffer))
     {
       protocol->free();				// Free used buffer
       my_message(ER_OUT_OF_RESOURCES, ER(ER_OUT_OF_RESOURCES), MYF(0));
       break;
     }
+
     /*
       Reset buffer to its original state, as it may have been altered in
       Item::send().
     */
     buffer.set(buff, sizeof(buff), &my_charset_bin);
   }
+
   thd->sent_row_count++;
   if (thd->is_error())
   {

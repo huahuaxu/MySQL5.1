@@ -575,6 +575,8 @@ bool Protocol::send_fields(List<Item> *list, uint flags)
   CHARSET_INFO *thd_charset= thd->variables.character_set_results;
   DBUG_ENTER("send_fields");
 
+  sql_print_information("%s[%d] [tid:%lu]: Sending fields(%lu) header to client(%s)...", __FILE__, __LINE__, pthread_self(), list->elements, thd->net.vio? thd->net.vio->_debug_ip_port:"");
+
   if (flags & SEND_NUM_ROWS)
   {				// Packet with number of elements
     uchar *pos= net_store_length(buff, list->elements);
@@ -616,6 +618,7 @@ bool Protocol::send_fields(List<Item> *list, uint flags)
 		     cs, thd_charset) ||
 	  local_packet->realloc(local_packet->length()+12))
 	goto err;
+
       /* Store fixed length fields */
       pos= (char*) local_packet->ptr()+local_packet->length();
       *pos++= 12;				// Length of packed fields
@@ -702,8 +705,10 @@ bool Protocol::send_fields(List<Item> *list, uint flags)
     local_packet->length((uint) (pos - local_packet->ptr()));
     if (flags & SEND_DEFAULTS)
       item->send(&prot, &tmp);			// Send default value
+
     if (prot.write())
       DBUG_RETURN(1);
+
 #ifndef DBUG_OFF
     field_types[count++]= field.type;
 #endif
@@ -728,7 +733,9 @@ err:
   DBUG_RETURN(1);				/* purecov: inspected */
 }
 
-
+/**
+ * 将数据写入网络输出流
+ */
 bool Protocol::write()
 {
   DBUG_ENTER("Protocol::write");
@@ -815,14 +822,16 @@ bool Protocol_text::store_null()
 
 
 /**
-  Auxilary function to convert string to the given character set
-  and store in network buffer.
+  *Auxilary function to convert string to the given character set
+  *and store in network buffer.
 */
 
 bool Protocol::store_string_aux(const char *from, size_t length,
                                 CHARSET_INFO *fromcs, CHARSET_INFO *tocs)
 {
+
   /* 'tocs' is set 0 when client issues SET character_set_results=NULL */
+  //将字符串转换成目标库制定的字符集
   if (tocs && !my_charset_same(fromcs, tocs) &&
       fromcs != &my_charset_bin &&
       tocs != &my_charset_bin)
@@ -831,6 +840,7 @@ bool Protocol::store_string_aux(const char *from, size_t length,
     return (convert->copy(from, length, fromcs, tocs, &dummy_errors) ||
             net_store_data((uchar*) convert->ptr(), convert->length()));
   }
+
   return net_store_data((uchar*) from, length);
 }
 
@@ -969,8 +979,13 @@ bool Protocol_text::store(double from, uint32 decimals, String *buffer)
 
 bool Protocol_text::store(Field *field)
 {
+
+	sql_print_information("%s[%d] [tid:%lu]: Sending 1 field value [text] {type = %d, name = %s} to client(%s)...", __FILE__, __LINE__, pthread_self(),
+			field->type(), field->field_name, this->thd->net.vio? this->thd->net.vio->_debug_ip_port:"");
+
   if (field->is_null())
     return store_null();
+
 #ifndef DBUG_OFF
   field_pos++;
 #endif
@@ -1200,12 +1215,16 @@ bool Protocol_binary::store(double from, uint32 decimals, String *buffer)
 
 bool Protocol_binary::store(Field *field)
 {
+	sql_print_information("%s[%d] [tid:%lu]: Sending 1 field value [binary] {type = %d, name = %s} to client(%s)...", __FILE__, __LINE__, pthread_self(),
+				field->type(), field->field_name, this->thd->net.vio? this->thd->net.vio->_debug_ip_port:"");
+
   /*
     We should not increment field_pos here as send_binary() will call another
     protocol function to do this for us
   */
-  if (field->is_null())
+  if (field->is_null()) //null值
     return store_null();
+
   return field->send_binary(this);
 }
 

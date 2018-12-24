@@ -1156,6 +1156,7 @@ trx_sys_file_format_max_check(
 	recover if the file format is not supported by the engine
 	unless forced by the user. */
 	format_id = trx_sys_file_format_max_read();
+
 	if (format_id == ULINT_UNDEFINED) {
 		/* Format ID was not set. Set it to minimum possible
 		value. */

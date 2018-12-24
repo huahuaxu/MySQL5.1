@@ -1963,7 +1963,7 @@ innobase_init(
 
 	DBUG_ENTER("innobase_init");
 
-	sql_print_information("%s[%d] [tid:%lu]: Initializing InnoDB handlerton.", __FILE__, __LINE__, pthread_self());
+	sql_print_information("%s[%d] [tid:%lu]: Initializing the InnoDB handlerton...", __FILE__, __LINE__, pthread_self());
 
         handlerton *innobase_hton= (handlerton *)p;
         innodb_hton_ptr = innobase_hton;
@@ -2013,6 +2013,8 @@ innobase_init(
 		goto error;
 	}
 #endif /* UNIV_DEBUG */
+
+	sql_print_information("%s[%d] [tid:%lu]: current machine is %d-bit systems.", __FILE__, __LINE__, pthread_self(), sizeof(ulint) == 4? 32:64);
 
 	sql_print_information("%s[%d] [tid:%lu]: innobase_buffer_pool_size = %lu, innobase_log_file_size = %lu.", __FILE__, __LINE__, pthread_self(), innobase_buffer_pool_size, innobase_log_file_size);
 
@@ -2341,6 +2343,7 @@ innobase_change_buffering_inited_ok:
 	pthread_mutex_init(&commit_cond_m, MY_MUTEX_INIT_FAST);
 	pthread_cond_init(&commit_cond, NULL);
 	innodb_inited= 1;
+
 #ifdef MYSQL_DYNAMIC_PLUGIN
 	if (innobase_hton != p) {
 		innobase_hton = reinterpret_cast<handlerton*>(p);
@@ -11136,6 +11139,10 @@ innobase_commit_concurrency_init_default(void)
 {
 	MYSQL_SYSVAR_NAME(commit_concurrency).def_val
 		= innobase_commit_concurrency;
+
+	sql_print_information("%s[%d] [tid:%lu]: innobase_commit_concurrency = %u.",
+										__FILE__, __LINE__, pthread_self(),
+										innobase_commit_concurrency);
 }
 
 #ifdef UNIV_COMPILE_TEST_FUNCS

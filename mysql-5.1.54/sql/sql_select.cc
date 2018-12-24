@@ -2340,7 +2340,7 @@ JOIN::exec()
     thd_proc_info(thd, "Sending data");
     DBUG_PRINT("info", ("%s", thd->proc_info));
 
-    sql_print_information("%s[%d] [tid:%lu]: Sending data for the select {%s} from client(%s)...", __FILE__, __LINE__, pthread_self(), this->thd->query(), thd->net.vio? thd->net.vio->_debug_ip_port:"");
+    sql_print_information("%s[%d] [tid:%lu]: Sending data for the select {%s} to client(%s)...", __FILE__, __LINE__, pthread_self(), this->thd->query(), thd->net.vio? thd->net.vio->_debug_ip_port:"");
 
     result->send_fields((procedure ? curr_join->procedure_fields_list :
                          *curr_fields_list),
@@ -11158,6 +11158,7 @@ do_select(JOIN *join,List<Item> *fields,TABLE *table,Procedure *procedure)
         table->s->keys && !table->file->inited)
       table->file->ha_index_init(0, 0);
   }
+
   /* Set up select_end */
   Next_select_func end_select= setup_end_select_func(join);
   if (join->tables)
@@ -11166,6 +11167,7 @@ do_select(JOIN *join,List<Item> *fields,TABLE *table,Procedure *procedure)
 
     join_tab=join->join_tab+join->const_tables;
   }
+
   join->send_records=0;
   if (join->tables == join->const_tables)
   {
@@ -12342,11 +12344,13 @@ end_send(JOIN *join, JOIN_TAB *join_tab __attribute__((unused)),
     int error;
     if (join->having && join->having->val_int() == 0)
       DBUG_RETURN(NESTED_LOOP_OK);               // Didn't match having
+
     error=0;
     if (join->procedure)
       error=join->procedure->send_row(join->procedure_fields_list);
     else if (join->do_send_rows)
       error=join->result->send_data(*join->fields);
+
     if (error)
       DBUG_RETURN(NESTED_LOOP_ERROR); /* purecov: inspected */
     if (++join->send_records >= join->unit->select_limit_cnt &&

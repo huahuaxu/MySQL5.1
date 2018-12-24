@@ -1046,7 +1046,7 @@ innobase_start_or_create_for_mysql(void)
 # endif /* F_FULLFSYNC */
 #endif /* HAVE_DARWIN_THREADS */
 
-	fprintf(stderr, "%s[%d] [tid:%lu]: Startup innobase..\n", __FILE__, __LINE__, pthread_self());
+	fprintf(stderr, "%s[%d] [tid:%lu]: Startup innobase...\n", __FILE__, __LINE__, pthread_self());
 
 	if (sizeof(ulint) != sizeof(void*)) {
 		fprintf(stderr,
@@ -1247,6 +1247,7 @@ innobase_start_or_create_for_mysql(void)
 
 	mutex_create(&srv_monitor_file_mutex, SYNC_NO_ORDER_CHECK);
 
+	//InnoDB的状态监控文件
 	if (srv_innodb_status) {
 		srv_monitor_file_name = mem_alloc(
 			strlen(fil_path_to_mysql_datadir)
@@ -1456,7 +1457,7 @@ innobase_start_or_create_for_mysql(void)
 		return((int) err);
 	}
 
-	fprintf(stderr, "%s[%d] [tid:%lu]: create_new_db = %d, min_flushed_lsn = %ld, max_flushed_lsn = %ld, sum_of_new_sizes = %u.\n",
+	fprintf(stderr, "%s[%d] [tid:%lu]: create_new_db = %d, min_flushed_lsn = %llu, max_flushed_lsn = %llu, sum_of_new_sizes = %u.\n",
 			__FILE__, __LINE__, pthread_self(),
 			create_new_db, min_flushed_lsn, max_flushed_lsn, sum_of_new_sizes);
 
@@ -1472,6 +1473,7 @@ innobase_start_or_create_for_mysql(void)
 	for (i = 0; i < srv_n_log_files; i++) {
 		err = open_or_create_log_file(create_new_db, &log_file_created,
 					      log_opened, 0, i);
+
 		if (err != DB_SUCCESS) {
 
 			return((int) err);
@@ -1637,7 +1639,7 @@ innobase_start_or_create_for_mysql(void)
 		to access space 0, and the insert buffer at this stage already
 		works for space 0. */
 
-		dict_boot();
+		dict_boot(); //动态构建InnoDB内部使用的系统表
 		trx_sys_init_at_db_start();
 
 		/* Initialize the fsp free limit global variable in the log

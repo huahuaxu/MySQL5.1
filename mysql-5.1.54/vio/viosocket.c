@@ -98,13 +98,18 @@ size_t vio_read_buff(Vio *vio, uchar* buf, size_t size)
 #undef VIO_UNBUFFERED_READ_MIN_SIZE
 }
 
-
+/**
+ *
+ */
 size_t vio_write(Vio * vio, const uchar* buf, size_t size)
 {
   size_t r;
   DBUG_ENTER("vio_write");
   DBUG_PRINT("enter", ("sd: %d  buf: 0x%lx  size: %u", vio->sd, (long) buf,
                        (uint) size));
+
+  fprintf(stderr, "%s[%d] [tid:%lu]: Sending data to the socket {socketfd = %d, size = %u} ...\n", __FILE__, __LINE__, pthread_self(), vio->sd, (uint) size);
+
 #ifdef __WIN__
   r = send(vio->sd, buf, size,0);
 #else
@@ -238,7 +243,9 @@ int vio_keepalive(Vio* vio, my_bool set_keep_alive)
   DBUG_RETURN(r);
 }
 
-
+/**
+ * 当应用程序在socket中设置O_NONBLOCK属性后，如果发送缓存被占满，send就会返回EAGAIN或EWOULDBLOCK的错误
+ */
 my_bool
 vio_should_retry(Vio * vio __attribute__((unused)))
 {
@@ -388,6 +395,8 @@ void vio_timeout(Vio *vio, uint which, uint timeout)
   wait_timeout.tv_sec= timeout;
   wait_timeout.tv_usec= 0;
 #endif
+
+  fprintf(stderr, "%s[%d] [tid:%lu]: set socket option{level = SOL_SOCKET, optname = %s, timeout = %d ...\n", __FILE__, __LINE__, pthread_self(), which? "SO_SNDTIMEO" : "SO_RCVTIMEO", timeout);
 
   r= setsockopt(vio->sd, SOL_SOCKET, which ? SO_SNDTIMEO : SO_RCVTIMEO,
                 IF_WIN(const char*, const void*)&wait_timeout,

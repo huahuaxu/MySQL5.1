@@ -1047,6 +1047,7 @@ UNIV_INTERN ulong	srv_max_purge_lag		= 0;
 /**
 Puts an OS thread to wait if there are too many concurrent threads
 (>= srv_thread_concurrency) inside InnoDB. The threads wait in a FIFO queue.
+控制对InnoDB存储引擎的并发访问
 */
 UNIV_INTERN
 void

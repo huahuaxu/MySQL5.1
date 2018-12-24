@@ -379,8 +379,13 @@ my_bool
 my_net_write(NET *net,const uchar *packet,size_t len)
 {
   uchar buff[NET_HEADER_SIZE];
+
+  fprintf(stderr, "%s[%d] [tid:%lu]: Try to send %u bytes to client(%s)...\n", __FILE__, __LINE__, pthread_self(),
+		  len, net->vio? net->vio->_debug_ip_port:"");
+
   if (unlikely(!net->vio)) /* nowhere to write */
     return 0;
+
   /*
     Big packets are handled by splitting them in packets of MAX_PACKET_LENGTH
     length. The last packet is always a packet that is < MAX_PACKET_LENGTH.
@@ -397,6 +402,7 @@ my_net_write(NET *net,const uchar *packet,size_t len)
     packet += z_size;
     len-=     z_size;
   }
+
   /* Write last packet */
   int3store(buff,len);
   buff[3]= (uchar) net->pkt_nr++;
@@ -500,7 +506,7 @@ net_write_command(NET *net,uchar command,
   @retval
     1
 */
-
+//优先将带发送的数据换存在对应的发送缓存中，当发送缓存满时才将数据写到网络流中
 static my_bool
 net_write_buff(NET *net, const uchar *packet, ulong len)
 {
@@ -572,6 +578,9 @@ net_real_write(NET *net,const uchar *packet, size_t len)
   my_bool net_blocking = vio_is_blocking(net->vio);
   DBUG_ENTER("net_real_write");
 
+  fprintf(stderr, "%s[%d] [tid:%lu]: Sending bytes {length = %u, net_blocking = %d, retry_count = %u, compress = %d, write_timeout = %u} to client(%s)...\n", __FILE__, __LINE__, pthread_self(),
+      		  len, net_blocking, net->retry_count, net->compress, net->write_timeout, net->vio? net->vio->_debug_ip_port:"");
+
 #if defined(MYSQL_SERVER) && defined(USE_QUERY_CACHE)
   query_cache_insert(net, (char*) packet, len);
 #endif
@@ -630,6 +639,8 @@ net_real_write(NET *net,const uchar *packet, size_t len)
 #if !defined(__WIN__)
       if ((interrupted || length == 0) && !thr_alarm_in_use(&alarmed))
       {
+    	  fprintf(stderr, "%s[%d] [tid:%lu]: Monitoring the timeout {%u} for writing to client(%s)...\n", __FILE__, __LINE__, pthread_self(), net->write_timeout, net->vio? net->vio->_debug_ip_port:"");
+
         if (!thr_alarm(&alarmed, net->write_timeout, &alarm_buff))
         {                                       /* Always true for client */
 	  my_bool old_mode;
@@ -680,9 +691,11 @@ net_real_write(NET *net,const uchar *packet, size_t len)
 #endif /* MYSQL_SERVER */
       break;
     }
+
     pos+=length;
     update_statistics(thd_increment_bytes_sent(length));
   }
+
 #ifndef __WIN__
  end:
 #endif
@@ -1152,9 +1165,17 @@ void my_net_set_read_timeout(NET *net, uint timeout)
   DBUG_ENTER("my_net_set_read_timeout");
   DBUG_PRINT("enter", ("timeout: %d", timeout));
   net->read_timeout= timeout;
+
+
+
 #ifdef NO_ALARM
+  fprintf(stderr, "%s[%d] [tid:%lu]: set read_timeout = %d (socket) for client(%s)...\n", __FILE__, __LINE__, pthread_self(), timeout, net->vio? net->vio->_debug_ip_port:"");
+
   if (net->vio)
     vio_timeout(net->vio, 0, timeout);
+#else
+  fprintf(stderr, "%s[%d] [tid:%lu]: set read_timeout = %d (alarms) for client(%s)...\n", __FILE__, __LINE__, pthread_self(), timeout, net->vio? net->vio->_debug_ip_port:"");
+
 #endif
   DBUG_VOID_RETURN;
 }
@@ -1165,9 +1186,17 @@ void my_net_set_write_timeout(NET *net, uint timeout)
   DBUG_ENTER("my_net_set_write_timeout");
   DBUG_PRINT("enter", ("timeout: %d", timeout));
   net->write_timeout= timeout;
+
+
 #ifdef NO_ALARM
+  fprintf(stderr, "%s[%d] [tid:%lu]: set write_timeout = %d (socket) for client(%s)...\n", __FILE__, __LINE__, pthread_self(), timeout, net->vio? net->vio->_debug_ip_port:"");
+
   if (net->vio)
     vio_timeout(net->vio, 1, timeout);
+#else
+  fprintf(stderr, "%s[%d] [tid:%lu]: set write_timeout = %d (alarms) for client(%s)...\n", __FILE__, __LINE__, pthread_self(), timeout, net->vio? net->vio->_debug_ip_port:"");
+
 #endif
+
   DBUG_VOID_RETURN;
 }

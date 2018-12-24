@@ -5561,6 +5561,8 @@ bool Item::send(Protocol *protocol, String *buffer)
   bool UNINIT_VAR(result);                       // Will be set if null_value == 0
   enum_field_types f_type;
 
+  sql_print_information("%s[%d] [tid:%lu]: Sending 1 field to client...", __FILE__, __LINE__, pthread_self());
+
   switch ((f_type=field_type())) {
   default:
   case MYSQL_TYPE_NULL:
@@ -5658,12 +5660,15 @@ bool Item::send(Protocol *protocol, String *buffer)
   }
   if (null_value)
     result= protocol->store_null();
+
   return result;
 }
 
 
 bool Item_field::send(Protocol *protocol, String *buffer)
 {
+  sql_print_information("%s[%d] [tid:%lu]: Sending 1 field to client...", __FILE__, __LINE__, pthread_self());
+
   return protocol->store(result_field);
 }
 
@@ -6124,6 +6129,8 @@ void Item_ref::print(String *str, enum_query_type query_type)
 
 bool Item_ref::send(Protocol *prot, String *tmp)
 {
+	sql_print_information("%s[%d] [tid:%lu]: Sending 1 field to client...", __FILE__, __LINE__, pthread_self());
+
   if (result_field)
     return prot->store(result_field);
   return (*ref)->send(prot, tmp);

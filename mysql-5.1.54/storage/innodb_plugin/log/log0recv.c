@@ -642,7 +642,9 @@ recv_check_cp_is_consistent(
 #ifndef UNIV_HOTBACKUP
 /********************************************************//**
 Looks for the maximum consistent checkpoint from the log groups.
-@return	error code or DB_SUCCESS */
+遍历所有的log group，查找其中最大的checkpoint lsn
+@return	error code or DB_SUCCESS
+*/
 static
 ulint
 recv_find_max_checkpoint(
@@ -665,12 +667,16 @@ recv_find_max_checkpoint(
 
 	buf = log_sys->checkpoint_buf;
 
-	while (group) {
+	while (group) { //遍历所有的log group
 		group->state = LOG_GROUP_CORRUPTED;
 
+		//checkpoint信息保存在每个日志组日志文件第一页之中,有两处:
+		// 1.LOG_CHECKPOINT_1(第一个LOG_BLOCK_SIZE处)处;
+		// 2.LOG_CHECKPOINT_2(3)处
 		for (field = LOG_CHECKPOINT_1; field <= LOG_CHECKPOINT_2;
 		     field += LOG_CHECKPOINT_2 - LOG_CHECKPOINT_1) {
 
+			//从一个日志组文件中读取checkpoint信息
 			log_group_read_checkpoint_info(group, field);
 
 			if (!recv_check_cp_is_consistent(buf)) {
@@ -698,6 +704,9 @@ recv_find_max_checkpoint(
 				buf + LOG_CHECKPOINT_OFFSET);
 			checkpoint_no = mach_read_ull(
 				buf + LOG_CHECKPOINT_NO);
+
+			fprintf(stderr, "%s[%d] [tid:%lu]: group_id = %lu, checkpoint_lsn = %llu, checkpoint_no = %llu.\n", __FILE__, __LINE__, pthread_self(), group->id, group->lsn, checkpoint_no);
+
 
 #ifdef UNIV_DEBUG
 			if (log_debug_writes) {
@@ -2797,6 +2806,7 @@ recv_group_scan_log_recs(
 	while (!finished) {
 		end_lsn = start_lsn + RECV_SCAN_SIZE;
 
+		//每次读取RECV_SCAN_SIZE (宏定义：4) 个日志pages，存入log buf
 		log_group_read_log_seg(LOG_RECOVER, log_sys->buf,
 				       group, start_lsn, end_lsn);
 
@@ -2804,6 +2814,7 @@ recv_group_scan_log_recs(
 			(buf_pool->curr_size - recv_n_pool_free_frames)
 			* UNIV_PAGE_SIZE, TRUE, log_sys->buf, RECV_SCAN_SIZE,
 			start_lsn, contiguous_lsn, group_scanned_lsn);
+
 		start_lsn = end_lsn;
 	}
 
@@ -2909,6 +2920,9 @@ recv_recovery_from_checkpoint_start_func(
 # define LIMIT_LSN		IB_ULONGLONG_MAX
 #endif /* UNIV_LOG_ARCHIVE */
 
+	fprintf(stderr, "%s[%d] [tid:%lu]: Recovering from the checkpoint{min_flushed_lsn = %llu, max_flushed_lsn = %llu}.\n",
+				__FILE__, __LINE__, pthread_self(), min_flushed_lsn, max_flushed_lsn);
+
 	if (TYPE_CHECKPOINT) {
 		recv_sys_create();
 		recv_sys_init(buf_pool_get_curr_size());
@@ -2930,7 +2944,7 @@ recv_recovery_from_checkpoint_start_func(
 	mutex_enter(&(log_sys->mutex));
 
 	/* Look for the latest checkpoint from any of the log groups */
-
+	//遍历所有的log group,查找其中最大的checkpoint lsn
 	err = recv_find_max_checkpoint(&max_cp_group, &max_cp_field);
 
 	if (err != DB_SUCCESS) {
@@ -2946,6 +2960,9 @@ recv_recovery_from_checkpoint_start_func(
 
 	checkpoint_lsn = mach_read_ull(buf + LOG_CHECKPOINT_LSN);
 	checkpoint_no = mach_read_ull(buf + LOG_CHECKPOINT_NO);
+
+	fprintf(stderr, "%s[%d] [tid:%lu]: checkpoint_lsn = %llu, checkpoint_no = %llu.\n", __FILE__, __LINE__, pthread_self(), checkpoint_lsn, checkpoint_no);
+
 #ifdef UNIV_LOG_ARCHIVE
 	archived_lsn = mach_read_ull(buf + LOG_CHECKPOINT_ARCHIVED_LSN);
 #endif /* UNIV_LOG_ARCHIVE */
