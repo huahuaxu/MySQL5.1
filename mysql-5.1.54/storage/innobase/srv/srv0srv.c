@@ -2222,7 +2222,7 @@ loop:
 	
 	sync_arr_wake_threads_if_sema_free();
 
-	if (sync_array_print_long_waits()) {
+	if (sync_array_print_long_waits()) { //处理长时间等待信号量的线程
 		fatal_cnt++;
 		if (fatal_cnt > 10) {
 
@@ -2233,7 +2233,7 @@ loop:
 				" because it appears to be hung.\n",
 				(ulong) srv_fatal_semaphore_wait_threshold);
 
-			ut_error;
+			ut_error; //导致mysqld crash
 		}
 	} else {
 		fatal_cnt = 0;
@@ -2368,6 +2368,7 @@ loop:
 
 	skip_sleep = FALSE;
 
+	//1秒钟的定时任务
 	for (i = 0; i < 10; i++) {
 		n_ios_old = log_sys->n_log_ios + buf_pool->n_pages_read
 			+ buf_pool->n_pages_written;
@@ -2400,7 +2401,9 @@ loop:
 		at transaction commit */
 
 		srv_main_thread_op_info = "flushing log";
-		log_buffer_flush_to_disk();
+		//日志刷新到磁盘[总是]
+		//即使某个事务还没有提交,InnoDB存储引擎仍然会每秒将重做日志缓冲中的内容刷新到重做日志文件.所以再大的事务commit的时间也是很快的
+		log_buffer_flush_to_disk(); 
 
 		srv_main_thread_op_info = "making checkpoint";
 		log_free_check();
@@ -2416,8 +2419,11 @@ loop:
 			+ buf_pool->n_pages_written;
 		if (n_pend_ios < 3 && (n_ios - n_ios_old < 5)) {
 			srv_main_thread_op_info = "doing insert buffer merge";
+			//合并插入缓冲[可能]
+			//合并插入缓冲(insert buffer)并不是每秒都发生.InnoDB存储引擎会判断当前一秒内发生的IO次数是否小于5次,如果小于5次,
+			//InnoDB认为当前的IO压力很小,可以执行合并插入缓冲的操作
 			ibuf_contract_for_n_pages(
-				TRUE, srv_insert_buffer_batch_size / 4);
+				TRUE, srv_insert_buffer_batch_size / 4); 
 
 			srv_main_thread_op_info = "flushing log";
 
@@ -2429,9 +2435,11 @@ loop:
 
 			/* Try to keep the number of modified pages in the
 			buffer pool under the limit wished by the user */
-
+			//至多刷新innodb_io_capacity个InnoDB的缓冲池中的脏页到磁盘[可能]
+			//刷新100个脏页也不是每秒都在发生.InnoDB存储引擎通过判断当前缓冲池中脏页的比例(buf_get_modified_ratio_pct)是否超过配置文件中
+			//innodb_max_dirty_pages_pct这个参数(默认为90,代表%90)如果超过了这个阀值,Innodb存储引擎认为需要做磁盘同步操作,将100个脏页写入磁盘
 			n_pages_flushed = buf_flush_batch(BUF_FLUSH_LIST, 100,
-							  ut_dulint_max);
+							  ut_dulint_max); 
 
 			/* If we had to do the flush, it may have taken
 			even more than 1 second, and also, there may be more
@@ -2441,6 +2449,7 @@ loop:
 			skip_sleep = TRUE;
 		}
 
+		//如果没有用户活动,切换到background loop(可能)
 		if (srv_activity_count == old_activity_count) {
 
 			/* There is no user activity at the moment, go to
@@ -2458,6 +2467,9 @@ loop:
 	seconds */
 	mem_validate_all_blocks();
 #endif
+
+    //10秒钟的定时任务
+
 	/* If there were less than 200 i/os during the 10 second period,
 	we assume that there is free disk i/o capacity available, and it
 	makes sense to flush 100 pages. */
@@ -2468,7 +2480,9 @@ loop:
 	if (n_pend_ios < 3 && (n_ios - n_ios_very_old < 200)) {
 
 		srv_main_thread_op_info = "flushing buffer pool pages";
-		buf_flush_batch(BUF_FLUSH_LIST, 100, ut_dulint_max);
+		//刷新100个脏页到磁盘[可能]
+		//InnoDB存储引擎会先判断过去10秒之内磁盘的IO操作是否小于200次.如果是,nnodb存储引擎认为当前有足够的磁盘IO操作能力,因此将100个脏页刷新到磁盘
+		buf_flush_batch(BUF_FLUSH_LIST, 100, ut_dulint_max); 
 
 		srv_main_thread_op_info = "flushing log";
 		log_buffer_flush_to_disk();
@@ -2478,10 +2492,12 @@ loop:
 	even if the server were active */
 
 	srv_main_thread_op_info = "doing insert buffer merge";
-	ibuf_contract_for_n_pages(TRUE, srv_insert_buffer_batch_size / 4);
+	//合并至多5个插入缓冲[总是]
+	//不同于每1秒操作时可能发生的合并插入缓冲操作,这次的合并插入缓冲操作总会在这个阶段进行
+	ibuf_contract_for_n_pages(TRUE, srv_insert_buffer_batch_size / 4); 
 
 	srv_main_thread_op_info = "flushing log";
-	log_buffer_flush_to_disk();
+	log_buffer_flush_to_disk();  //将日志缓冲刷新到磁盘(总是)
 
 	/* We run a full purge every 10 seconds, even if the server
 	were active */
@@ -2489,7 +2505,7 @@ loop:
 	n_pages_purged = 1;
 
 	last_flush_time = time(NULL);
-
+	//执行full purge操作,即删除无用的Undo页[总是]
 	while (n_pages_purged) {
 
 		if (srv_fast_shutdown && srv_shutdown_state > 0) {
@@ -2498,6 +2514,9 @@ loop:
 		}
 
 		srv_main_thread_op_info = "purging";
+		//对表执行update/delete这类的操作时,原先的行被标记为删除,但是因为一致性读(consistent read)的关系,需要保留这些版本的信息.
+		//但是在full perge 过程中,InnoDB存储引擎会判断当前事务系统中已删除的行是否可以删除,比如有时候可能还有查询操作需要读取之前版本undo信息,
+		//如果可以,innodb会立即将其删除
 		n_pages_purged = trx_purge();
 
 		current_time = time(NULL);
@@ -2513,7 +2532,8 @@ loop:
 	srv_main_thread_op_info = "flushing buffer pool pages";
 
 	/* Flush a few oldest pages to make a new checkpoint younger */
-
+	//刷新100个或者10个脏页到磁盘[总是]
+	//InnoDB存储引擎会判断缓冲池中脏页的比例(buf_get_modified_ratio_pct),如果没有超过70%的脏页,则只需刷新10个脏页到磁盘
 	if (buf_get_modified_ratio_pct() > 70) {
 
 		/* If there are lots of modified pages in the buffer pool
@@ -2534,7 +2554,9 @@ loop:
 	srv_main_thread_op_info = "making checkpoint";
 
 	/* Make a new checkpoint about once in 10 seconds */
-
+	//产生一个检查点(checkpoint)
+	//innoDB存储引擎的检查点也成为模糊检查点(fuzzy checkpoint).
+	//InnoDB存储引擎在checkpoint时并不会把所有缓冲池中的脏页都写入磁盘,因为这样可能对性能产生影响,而只是将最老日志序列号(oldest LSN)的页写入磁盘
 	log_checkpoint(TRUE, FALSE);
 
 	srv_main_thread_op_info = "reserving kernel mutex";
@@ -2552,9 +2574,9 @@ loop:
 	mutex_exit(&kernel_mutex);
 
 	/* If the database is quiet, we enter the background loop */
-
+	////若当前没有用户活动(数据库空闲时)或者数据库关闭时,就会切换到这个循环
 	/*****************************************************************/
-background_loop:
+background_loop:  
 	/* ---- In this loop we run background operations when the server
 	is quiet from user activity. Also in the case of a shutdown, we
 	loop here, flushing the buffer pool to the data files. */
@@ -2582,7 +2604,7 @@ background_loop:
 	n_pages_purged = 1;
 
 	last_flush_time = time(NULL);
-
+	//删除无用的Undo页[总是]
 	while (n_pages_purged) {
 		if (srv_fast_shutdown && srv_shutdown_state > 0) {
 
@@ -2612,7 +2634,7 @@ background_loop:
 	mutex_exit(&kernel_mutex);
 
 	srv_main_thread_op_info = "doing insert buffer merge";
-
+	//合并20个插入缓冲[总是]
 	if (srv_fast_shutdown && srv_shutdown_state > 0) {
 		n_bytes_merged = 0;
 	} else {

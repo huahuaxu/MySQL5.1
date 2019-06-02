@@ -1323,6 +1323,7 @@ loop:
 
 	mutex_enter(&(log_sys->mutex));
 
+	//指定的lsn Redo日志已经刷到磁盘,则直接返回
 	if (flush_to_disk
 	    && ut_dulint_cmp(log_sys->flushed_to_disk_lsn, lsn) >= 0) {
 
@@ -1342,9 +1343,10 @@ loop:
 		return;
 	}
 
-	if (log_sys->n_pending_writes > 0) {
+	if (log_sys->n_pending_writes > 0) { //当前有其它线程正在执行Redo刷盘
 		/* A write (+ possibly flush to disk) is running */
 
+		//其它线程正在将指定的lsn刷入磁盘
 		if (flush_to_disk
 		    && ut_dulint_cmp(log_sys->current_flush_lsn, lsn)
 		    >= 0) {
@@ -1354,6 +1356,7 @@ loop:
 			goto do_waits;
 		}
 
+		//其它线程正在将指定的lsn写入日志文件
 		if (!flush_to_disk
 		    && ut_dulint_cmp(log_sys->write_lsn, lsn) >= 0) {
 			/* The write will write enough: wait for it to
@@ -1366,12 +1369,13 @@ loop:
 
 		/* Wait for the write to complete and try to start a new
 		write */
-
+		//等待其它线程的刷盘或写日志文件操作完成
 		os_event_wait(log_sys->no_flush_event);
 
 		goto loop;
 	}
 
+	//当前无Buffer的数据写入日志文件
 	if (!flush_to_disk
 	    && log_sys->buf_free == log_sys->buf_next_to_write) {
 		/* Nothing to write and no flush to disk requested */
@@ -1410,10 +1414,10 @@ loop:
 
 	ut_ad(area_end - area_start > 0);
 
-	log_sys->write_lsn = log_sys->lsn;
+	log_sys->write_lsn = log_sys->lsn; //记录即将写入日志文件的最大lsn
 
 	if (flush_to_disk) {
-		log_sys->current_flush_lsn = log_sys->lsn;
+		log_sys->current_flush_lsn = log_sys->lsn;//记录即将刷入磁盘的最大lsn
 	}
 
 	log_sys->one_flushed = FALSE;
@@ -1437,7 +1441,7 @@ loop:
 	group = UT_LIST_GET_FIRST(log_sys->log_groups);
 
 	/* Do the write to the log files */
-
+    //写Redo日志到文件
 	while (group) {
 		log_group_write_buf(
 			group, log_sys->buf + area_start,
@@ -1453,7 +1457,7 @@ loop:
 
 	mutex_exit(&(log_sys->mutex));
 
-	if (srv_unix_file_flush_method == SRV_UNIX_O_DSYNC) {
+	if (srv_unix_file_flush_method == SRV_UNIX_O_DSYNC) { //数据直接进入磁盘
 		/* O_DSYNC means the OS did not buffer the log file at all:
 		so we have also flushed to disk what we have written */
 
@@ -1500,7 +1504,7 @@ do_waits:
 
 /********************************************************************
 Does a syncronous flush of the log buffer to disk. */
-
+//将重做日志Buffer中的内容刷新到重做日志文件
 void
 log_buffer_flush_to_disk(void)
 /*==========================*/

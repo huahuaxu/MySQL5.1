@@ -1159,6 +1159,7 @@ innobase_start_or_create_for_mysql(void)
 
 	fprintf(stderr, "%s[%d] [tid:%lu]: srv_file_flush_method_str = %s.\n", __FILE__, __LINE__, pthread_self(), srv_file_flush_method_str);
 
+    //确定数据刷盘的方式
 	if (srv_file_flush_method_str == NULL) {
 		/* These are the default options */
 
@@ -1167,13 +1168,13 @@ innobase_start_or_create_for_mysql(void)
 		srv_win_file_flush_method = SRV_WIN_IO_UNBUFFERED;
 #ifndef __WIN__
 	} else if (0 == ut_strcmp(srv_file_flush_method_str, "fsync")) {
-		srv_unix_file_flush_method = SRV_UNIX_FSYNC;
+		srv_unix_file_flush_method = SRV_UNIX_FSYNC;  //确保将修改过的块立即写到磁盘上(除数据外,还会同步更新文件的属性)
 
 	} else if (0 == ut_strcmp(srv_file_flush_method_str, "O_DSYNC")) {
-		srv_unix_file_flush_method = SRV_UNIX_O_DSYNC;
+		srv_unix_file_flush_method = SRV_UNIX_O_DSYNC; //同步方式写入文件,强制刷新内核缓冲区到输出文件
 
 	} else if (0 == ut_strcmp(srv_file_flush_method_str, "O_DIRECT")) {
-		srv_unix_file_flush_method = SRV_UNIX_O_DIRECT;
+		srv_unix_file_flush_method = SRV_UNIX_O_DIRECT; //绕过缓冲区高速缓存,直接IO
 
 	} else if (0 == ut_strcmp(srv_file_flush_method_str, "littlesync")) {
 		srv_unix_file_flush_method = SRV_UNIX_LITTLESYNC;
@@ -1723,15 +1724,16 @@ innobase_start_or_create_for_mysql(void)
 
 	/* Create the thread which watches the timeouts for lock waits */
 	os_thread_create(&srv_lock_timeout_thread, NULL,
-			 thread_ids + 2 + SRV_MAX_N_IO_THREADS);
+			 thread_ids + 2 + SRV_MAX_N_IO_THREADS);  // 锁(业务中的事务锁)等待超时监控线程
 
+	//
 	/* Create the thread which warns of long semaphore waits */
 	os_thread_create(&srv_error_monitor_thread, NULL,
-			 thread_ids + 3 + SRV_MAX_N_IO_THREADS);
+			 thread_ids + 3 + SRV_MAX_N_IO_THREADS); //发现存在阻塞超过600s的latch锁,如果连续10次检测该锁仍没有释放,就会触发panic避免服务持续hang下去
 
 	/* Create the thread which prints InnoDB monitor info */
 	os_thread_create(&srv_monitor_thread, NULL,
-			 thread_ids + 4 + SRV_MAX_N_IO_THREADS);
+			 thread_ids + 4 + SRV_MAX_N_IO_THREADS); //InnoDB状态信息定时输出线程
 
 	srv_is_being_started = FALSE;
 
@@ -1749,7 +1751,6 @@ innobase_start_or_create_for_mysql(void)
 
 	/* Create the master thread which does purge and other utility
 	operations */
-
 	os_thread_create(&srv_master_thread, NULL, thread_ids
 			 + (1 + SRV_MAX_N_IO_THREADS));
 
