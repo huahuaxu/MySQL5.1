@@ -1235,7 +1235,7 @@ fail_err:
 
 		page_cur_search(block, index, entry, PAGE_CUR_LE, page_cursor);
 
-		/尝试插入记录
+		//尝试插入记录
 		*rec = page_cur_tuple_insert(page_cursor, entry, index,
 					     n_ext, mtr);
 
