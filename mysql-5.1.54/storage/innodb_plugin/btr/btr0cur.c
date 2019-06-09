@@ -1136,7 +1136,7 @@ btr_cur_optimistic_insert(
 		modification log. */
 		//计算该压缩page的最大可用空闲空间
 		ulint	free_space_zip = page_zip_empty_size(
-			cursor->index->n_fields, zip_size) - 1;  
+			cursor->index->n_fields, zip_size) - 1;
 		ulint	n_uniq = dict_index_get_n_unique_in_tree(index);
 
 		ut_ad(dict_table_is_comp(index->table));
