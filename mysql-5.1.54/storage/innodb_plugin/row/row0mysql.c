@@ -305,8 +305,6 @@ row_mysql_store_col_in_innobase_format(
 	ulint		type;
 	ulint		lenlen;
 
-	fprintf(stderr, "%s[%d] [tid: %lu]: Converting/Storing a MySQL format non-SQL-NULL field to InnoDB format field...\n", __FILE__, __LINE__, pthread_self());
-
 	dtype = dfield_get_type(dfield);
 
 	type = dtype->mtype;
@@ -461,13 +459,17 @@ row_mysql_convert_row_to_innobase(
 		templ = prebuilt->mysql_template + i;
 		dfield = dtuple_get_nth_field(row, i);
 
+		//add for debug by huahua.xhh
+		const dtype_t*	dtype = dfield_get_type(dfield);
+		ulint		type = dtype->mtype;
+
 		if (templ->mysql_null_bit_mask != 0) {
 			/* Column may be SQL NULL */
 
 			if (mysql_rec[templ->mysql_null_byte_offset]
 			    & (byte) (templ->mysql_null_bit_mask)) {
 
-				fprintf(stderr, "%s[%d] [tid: %lu]: Converting/Storing a MySQL format SQL-NULL field to InnoDB format field{colid = %lu, type = %lu}...\n", __FILE__, __LINE__, pthread_self(), i, dfield_get_type(dfield)->mtype);
+				fprintf(stderr, "%s[%d] [tid: %lu]: Converting/Storing a MySQL format SQL-NULL field to InnoDB format field{colid = %lu, type = %lu}...\n", __FILE__, __LINE__, pthread_self(), i, type);
 
 				/* It is SQL NULL */
 				dfield_set_null(dfield);
@@ -476,7 +478,7 @@ row_mysql_convert_row_to_innobase(
 			}
 		}
 
-		fprintf(stderr, "%s[%d] [tid: %lu]: Converting/Storing a MySQL format non-SQL-NULL field to InnoDB format field{colid = %lu, type = %lu}...\n", __FILE__, __LINE__, pthread_self(), i, dfield_get_type(dfield)->mtype);
+		fprintf(stderr, "%s[%d] [tid: %lu]: Converting/Storing a MySQL format non-SQL-NULL field to InnoDB format field{colid = %lu, type = %lu}...\n", __FILE__, __LINE__, pthread_self(), i, type);
 
 
 		//复制一个列的值到InnoDB的一行中
