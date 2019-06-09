@@ -1010,6 +1010,7 @@ page_get_max_insert_size(
 Returns the maximum combined size of records which can be inserted on top
 of the record heap if a page is first reorganized.
 @return	maximum combined size for inserted records */
+//计算指定的Page上还能写入的最大空闲空间大小
 UNIV_INLINE
 ulint
 page_get_max_insert_size_after_reorganize(

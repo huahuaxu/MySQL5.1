@@ -138,14 +138,15 @@ page_zip_empty_size(
 	lint	size = zip_size
 		/* subtract the page header and the longest
 		uncompressed data needed for one record */
-		- (PAGE_DATA
-		   + PAGE_ZIP_DIR_SLOT_SIZE
-		   + DATA_TRX_ID_LEN + DATA_ROLL_PTR_LEN
+		- (PAGE_DATA   //表示一个page上数据开始的偏移量
+		   + PAGE_ZIP_DIR_SLOT_SIZE //一个压缩页内directory entry的大小,2个字节
+		   + DATA_TRX_ID_LEN  //一个记录的事务ID
+		   + DATA_ROLL_PTR_LEN //回滚段指针长度
 		   + 1/* encoded heap_no==2 in page_zip_write_rec() */
 		   + 1/* end of modification log */
 		   - REC_N_NEW_EXTRA_BYTES/* omitted bytes */)
 		/* subtract the space for page_zip_fields_encode() */
-		- compressBound(2 * (n_fields + 1));
+		- compressBound(2 * (n_fields + 1));  //减去为page_zip_fields_encode()留的空间，用于存储索引信息
 	return(size > 0 ? (ulint) size : 0);
 }
 #endif /* !UNIV_HOTBACKUP */

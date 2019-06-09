@@ -453,7 +453,7 @@ row_mysql_convert_row_to_innobase(
 	ut_ad(prebuilt->template_type == ROW_MYSQL_WHOLE_ROW);
 	ut_ad(prebuilt->mysql_template);
 
-	fprintf(stderr, "%s[%d] [tid: %lu]: Converting/Storing a MySQL format record to InnoDB format record{columns = %u}...\n", __FILE__, __LINE__, pthread_self(), prebuilt->n_template);
+	fprintf(stderr, "%s[%d] [tid: %lu]: Converting/Storing a MySQL format record to InnoDB format record{table = %s, columns = %u}...\n", __FILE__, __LINE__, pthread_self(), prebuilt->table->name, prebuilt->n_template);
 
 
 	for (i = 0; i < prebuilt->n_template; i++) {
@@ -467,13 +467,17 @@ row_mysql_convert_row_to_innobase(
 			if (mysql_rec[templ->mysql_null_byte_offset]
 			    & (byte) (templ->mysql_null_bit_mask)) {
 
-				/* It is SQL NULL */
+				fprintf(stderr, "%s[%d] [tid: %lu]: Converting/Storing a MySQL format SQL-NULL field to InnoDB format field{colid = %lu, type = %lu}...\n", __FILE__, __LINE__, pthread_self(), i, dfield_get_type(dfield)->mtype);
 
+				/* It is SQL NULL */
 				dfield_set_null(dfield);
 
 				goto next_column;
 			}
 		}
+
+		fprintf(stderr, "%s[%d] [tid: %lu]: Converting/Storing a MySQL format non-SQL-NULL field to InnoDB format field{colid = %lu, type = %lu}...\n", __FILE__, __LINE__, pthread_self(), i, dfield_get_type(dfield)->mtype);
+
 
 		//复制一个列的值到InnoDB的一行中
 		row_mysql_store_col_in_innobase_format(
@@ -1081,7 +1085,7 @@ row_insert_for_mysql(
 	ut_ad(trx);
 	ut_ad(trx->mysql_thread_id == os_thread_get_curr_id());
 
-	fprintf(stderr, "%s[%d] [tid: %lu]: Writing a record(MySQL format) into InnoDB Storage...\n", __FILE__, __LINE__, pthread_self());
+	fprintf(stderr, "%s[%d] [tid: %lu]: Writing a record(MySQL format) into InnoDB Storage for table [%s]...\n", __FILE__, __LINE__, pthread_self(), prebuilt->table->name);
 
 
 	if (prebuilt->table->ibd_file_missing) {

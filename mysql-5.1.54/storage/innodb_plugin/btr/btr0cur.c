@@ -985,6 +985,7 @@ btr_cur_ins_lock_and_undo(
 	rec = btr_cur_get_rec(cursor);
 	index = cursor->index;
 
+	//检查是否需要等待锁,如果被阻塞的话则加入一个显式锁
 	err = lock_rec_insert_check_and_lock(flags, rec,
 					     btr_cur_get_block(cursor),
 					     index, thr, mtr, inherit);
@@ -994,8 +995,9 @@ btr_cur_ins_lock_and_undo(
 		return(err);
 	}
 
+	//如果是聚集索引,且索引不是insert buffer tree,则记录undo,二级索引不记undo
 	if (dict_index_is_clust(index) && !dict_index_is_ibuf(index)) {
-
+		//写Undo日志
 		err = trx_undo_report_row_operation(flags, TRX_UNDO_INSERT_OP,
 						    thr, index, entry,
 						    NULL, 0, NULL,
@@ -1006,7 +1008,7 @@ btr_cur_ins_lock_and_undo(
 		}
 
 		/* Now we can fill in the roll ptr field in entry */
-
+		//更新记录的回滚指针
 		if (!(flags & BTR_KEEP_SYS_FLAG)) {
 
 			row_upd_index_entry_sys_field(entry, index,
@@ -1105,12 +1107,13 @@ btr_cur_optimistic_insert(
 #endif /* UNIV_DEBUG */
 
 	ut_ad(mtr_memo_contains(mtr, block, MTR_MEMO_PAGE_X_FIX));
-	max_size = page_get_max_insert_size_after_reorganize(page, 1);
-	leaf = page_is_leaf(page);
+	max_size = page_get_max_insert_size_after_reorganize(page, 1); //计算该Page上还能写入的最大空闲空间大小
+	leaf = page_is_leaf(page); //当前Page是否是叶子节点
 
 	/* Calculate the record size when entry is converted to a record */
-	rec_size = rec_get_converted_size(index, entry, n_ext);
+	rec_size = rec_get_converted_size(index, entry, n_ext); //计算这条逻辑记录(dtuple_struct)转换成物理记录的大小
 
+	//判断该记录是否需要外部存储,如果需要外部存储的话,返回DB_TOO_BIG_RECORD,由上层继续处理
 	if (page_zip_rec_needs_ext(rec_size, page_is_comp(page),
 				   dtuple_get_n_fields(entry), zip_size)) {
 
@@ -1126,12 +1129,13 @@ btr_cur_optimistic_insert(
 		rec_size = rec_get_converted_size(index, entry, n_ext);
 	}
 
+	//当该表为压缩表时,即zip_size>0.需要检查记录的大小,确保非叶子节点上能存储两条记录,否则返回DB_TOO_BIG_RECORD
 	if (UNIV_UNLIKELY(zip_size)) {
 		/* Estimate the free space of an empty compressed page.
 		Subtract one byte for the encoded heap_no in the
 		modification log. */
 		ulint	free_space_zip = page_zip_empty_size(
-			cursor->index->n_fields, zip_size) - 1;
+			cursor->index->n_fields, zip_size) - 1;  //计算该压缩page的最大可用空闲空间
 		ulint	n_uniq = dict_index_get_n_unique_in_tree(index);
 
 		ut_ad(dict_table_is_comp(index->table));
@@ -1165,12 +1169,12 @@ btr_cur_optimistic_insert(
 	level, check if we have to split the page to reserve enough free space
 	for future updates of records. */
 
-	if (dict_index_is_clust(index)
-	    && (page_get_n_recs(page) >= 2)
-	    && UNIV_LIKELY(leaf)
-	    && (dict_index_get_space_reserve() + rec_size > max_size)
-	    && (btr_page_get_split_rec_to_right(cursor, &dummy_rec)
-		|| btr_page_get_split_rec_to_left(cursor, &dummy_rec))) {
+	if (dict_index_is_clust(index)   //聚集索引
+	    && (page_get_n_recs(page) >= 2) //该page上的记录数大于2个
+	    && UNIV_LIKELY(leaf)  //叶子节点
+	    && (dict_index_get_space_reserve() + rec_size > max_size)  //加上预留空间之后,page的空闲空间就不够了
+	    && (btr_page_get_split_rec_to_right(cursor, &dummy_rec)    //是否分裂并将记录迁移到左节点或右节点
+		|| btr_page_get_split_rec_to_left(cursor, &dummy_rec))) {  
 fail:
 		err = DB_FAIL;
 fail_err:
@@ -1191,6 +1195,7 @@ fail_err:
 	}
 
 	/* Check locks and write to the undo log, if specified */
+	//写Undo日志
 	err = btr_cur_ins_lock_and_undo(flags, cursor, entry,
 					thr, mtr, &inherit);
 
@@ -1230,6 +1235,7 @@ fail_err:
 
 		page_cur_search(block, index, entry, PAGE_CUR_LE, page_cursor);
 
+		/尝试插入记录
 		*rec = page_cur_tuple_insert(page_cursor, entry, index,
 					     n_ext, mtr);
 
@@ -1354,7 +1360,7 @@ btr_cur_pessimistic_insert(
 
 	err = btr_cur_optimistic_insert(flags, cursor, entry, rec,
 					big_rec, n_ext, thr, mtr);
-	if (err != DB_FAIL) {
+	if (err != DB_FAIL) { //写入成功
 
 		return(err);
 	}
