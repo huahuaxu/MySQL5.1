@@ -264,6 +264,8 @@ my_bool acl_init(bool dont_read_acl_tables)
 
   sql_print_information("%s[%d] [tid: %lu]: Initializing the ACL...", __FILE__, __LINE__, pthread_self());
 
+  sql_print_information("%s[%d] [tid: %lu]: [Load ACL] dont_read_acl_tables = %d.", __FILE__, __LINE__, pthread_self(), dont_read_acl_tables);
+
   acl_cache= new hash_filo(ACL_CACHE_SIZE, 0, 0,
                            (hash_get_key) acl_entry_get_key,
                            (hash_free_key) free,

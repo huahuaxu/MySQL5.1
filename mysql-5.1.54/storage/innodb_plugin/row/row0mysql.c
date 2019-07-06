@@ -132,6 +132,8 @@ void
 row_mysql_delay_if_needed(void)
 /*===========================*/
 {
+	fprintf(stderr, "%s[%d] [tid: %lu]: srv_dml_needed_delay = %lu.\n", __FILE__, __LINE__, pthread_self(), srv_dml_needed_delay);
+
 	if (srv_dml_needed_delay) {
 		os_thread_sleep(srv_dml_needed_delay);
 	}
