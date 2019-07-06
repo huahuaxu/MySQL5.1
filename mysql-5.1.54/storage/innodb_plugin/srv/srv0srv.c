@@ -2637,7 +2637,7 @@ loop:  //主循环
 		}
 
 		srv_main_thread_op_info = "purging";
-		n_pages_purged = trx_purge();
+		n_pages_purged = trx_purge();  //清理回收Undo日志和数据页上的可删除数据记录
 
 		/* Flush logs if needed */
 		srv_sync_log_buffer_in_background();
@@ -2721,7 +2721,7 @@ background_loop: //后台循环
 		}
 
 		srv_main_thread_op_info = "purging";
-		n_pages_purged = trx_purge();
+		n_pages_purged = trx_purge();  //清理回收Undo日志和数据页上的可删除数据记录
 
 		/* Flush logs if needed */
 		srv_sync_log_buffer_in_background();

@@ -4897,7 +4897,7 @@ no_commit:
 			update the table upper limit. Note: last_value
 			will be 0 if get_auto_increment() was not called.*/
 
-			if (auto_inc >= prebuilt->autoinc_last_value) {
+			if (auto_inc >= prebuilt->autoinc_last_value) {  //更新自增列的下一个值
 set_max_autoinc:
 				/* This should filter out the negative
 				values set explicitly by the user. */

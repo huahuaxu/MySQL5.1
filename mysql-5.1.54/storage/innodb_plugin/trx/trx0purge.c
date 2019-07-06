@@ -217,6 +217,8 @@ trx_purge_sys_create(void)
 {
 	ut_ad(mutex_own(&kernel_mutex));
 
+	fprintf(stderr, "%s[%d] [tid:%lu][10s_loop]: Creating the global purge system...\n", __FILE__, __LINE__, pthread_self());
+
 	purge_sys = mem_alloc(sizeof(trx_purge_t));
 
 	purge_sys->state = TRX_STOP_PURGE;
@@ -1078,6 +1080,7 @@ trx_purge_rec_release(
 /*******************************************************************//**
 This function runs a purge batch.
 @return	number of undo log pages handled in the batch */
+//清理回收Undo日志和数据页上的可删除数据记录
 UNIV_INTERN
 ulint
 trx_purge(void)
@@ -1087,9 +1090,12 @@ trx_purge(void)
 	/*	que_thr_t*	thr2; */
 	ulint		old_pages_handled;
 
+	fprintf(stderr, "%s[%d] [tid:%lu] Try to purge undo log {n_active_thrs = %lu, srv_max_purge_lag = %lu}...\n", __FILE__, __LINE__, pthread_self(), 
+						purge_sys->trx->n_active_thrs, srv_max_purge_lag);
+
 	mutex_enter(&(purge_sys->mutex));
 
-	if (purge_sys->trx->n_active_thrs > 0) {
+	if (purge_sys->trx->n_active_thrs > 0) {  //当前还有回收线程在工作
 
 		mutex_exit(&(purge_sys->mutex));
 

@@ -1021,6 +1021,7 @@ trx_sys_init_at_db_start(void)
 
 	UT_LIST_INIT(trx_sys->view_list);
 
+	//创建redo日志回收系统
 	trx_purge_sys_create();
 
 	mutex_exit(&kernel_mutex);
