@@ -240,7 +240,9 @@ page_cur_rec_field_extends(
 #endif /* PAGE_CUR_LE_OR_EXTENDS */
 
 /****************************************************************//**
-Searches the right position for a page cursor. */
+* Searches the right position for a page cursor. 
+* 进行页面二分搜索（页面目录槽二分搜索,相邻槽间线性搜索）
+*/
 UNIV_INTERN
 void
 page_cur_search_with_match(

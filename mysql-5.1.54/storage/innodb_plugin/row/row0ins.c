@@ -2186,7 +2186,7 @@ row_ins_index_entry(
 	}
 
 	/* Try first optimistic descent to the B-tree */
-
+	//乐观插入,只修改叶子节点
 	err = row_ins_index_entry_low(BTR_MODIFY_LEAF, index, entry,
 				      n_ext, thr);
 	if (err != DB_FAIL) {
@@ -2195,7 +2195,7 @@ row_ins_index_entry(
 	}
 
 	/* Try then pessimistic descent to the B-tree */
-
+	//悲观插入, 需要修改B-TREE
 	err = row_ins_index_entry_low(BTR_MODIFY_TREE, index, entry,
 				      n_ext, thr);
 	return(err);
@@ -2219,6 +2219,9 @@ row_ins_index_entry_set_vals(
 
 	n_fields = dtuple_get_n_fields(entry);
 
+	fprintf(stderr, "%s[%d] [tid: %lu]: Setting the values of index {%s}...\n", __FILE__, __LINE__, pthread_self(), index->name);
+
+
 	for (i = 0; i < n_fields; i++) {
 		dict_field_t*	ind_field;
 		dfield_t*	field;
@@ -2231,7 +2234,7 @@ row_ins_index_entry_set_vals(
 		row_field = dtuple_get_nth_field(row, ind_field->col->ind);
 		len = dfield_get_len(row_field);
 
-		fprintf(stderr, "%s[%d] [tid: %lu]: Setting the value of index column {%s} in index {%s}...\n", __FILE__, __LINE__, pthread_self(), ind_field->name, index->name);
+		fprintf(stderr, "%s[%d] [tid: %lu]: set the value of index column {%s} in index {%s}.\n", __FILE__, __LINE__, pthread_self(), ind_field->name, index->name);
 
 		/* Check column prefix indexes */
 		if (ind_field->prefix_len > 0
@@ -2446,9 +2449,7 @@ row_ins_step(
 	trx_t*		trx;
 	ulint		err;
 
-	fprintf(stderr, "%s[%d] [tid: %lu]: Inserting a row to a table...\n", __FILE__, __LINE__, pthread_self());
-
-
+	
 	ut_ad(thr);
 
 	trx = thr_get_trx(thr);
@@ -2456,6 +2457,8 @@ row_ins_step(
 	trx_start_if_not_started(trx);
 
 	node = thr->run_node;
+	
+	fprintf(stderr, "%s[%d] [tid: %lu]: Inserting a row to the table [%s]...\n", __FILE__, __LINE__, pthread_self(), node->table->name);
 
 	ut_ad(que_node_get_type(node) == QUE_NODE_INSERT);
 

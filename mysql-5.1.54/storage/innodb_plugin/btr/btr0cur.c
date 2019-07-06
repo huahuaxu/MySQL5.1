@@ -529,13 +529,14 @@ btr_cur_search_to_nth_level(
 		}
 
 retry_page_get:
+		//取得本层页面,首次为根页面
 		block = buf_page_get_gen(space, zip_size, page_no,
 					 rw_latch, guess, buf_mode,
 					 file, line, mtr);
 
-		fprintf(stderr, "%s[%d] [tid: %lu]: The index page(name = %s.%s, space = %lu, page_no = %lu) is %s.\n",
+		fprintf(stderr, "%s[%d] [tid: %lu]: The index page(name = %s.%s, space = %lu, page_no = %lu, height = %lu) is %s.\n",
 						__FILE__, __LINE__, pthread_self(),
-						index->table->name, index->name, space, page_no, block == NULL? "not found":"found");
+						index->table->name, index->name, space, page_no, height, block == NULL? "not found":"found");
 
 		if (block == NULL) {
 			/* This must be a search to perform an insert;
@@ -614,6 +615,7 @@ retry_page_get:
 			page_mode = mode;
 		}
 
+		//在本层页面进行游标定位
 		page_cur_search_with_match(block, index, tuple, page_mode,
 					   &up_match, &up_bytes,
 					   &low_match, &low_bytes,
@@ -647,11 +649,12 @@ retry_page_get:
 
 		guess = NULL;
 
+		//若未到达指定level,则向下一层迭代
 		node_ptr = page_cur_get_rec(page_cursor);
 		offsets = rec_get_offsets(node_ptr, cursor->index, offsets,
 					  ULINT_UNDEFINED, &heap);
 		/* Go to the child node */
-		page_no = btr_node_ptr_get_child_page_no(node_ptr, offsets);
+		page_no = btr_node_ptr_get_child_page_no(node_ptr, offsets);  //去下层子页页号
 	}
 
 	if (UNIV_LIKELY_NULL(heap)) {
