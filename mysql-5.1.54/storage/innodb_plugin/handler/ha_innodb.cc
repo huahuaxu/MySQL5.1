@@ -4860,7 +4860,8 @@ no_commit:
 		/* Get the value that MySQL attempted to store in the table.*/
 		auto_inc = table->next_number_field->val_int();
 
-		sql_print_information("%s[%d] [tid: %lu]: col_max_value = %lu, auto_inc = %lu, table = %s.", __FILE__, __LINE__, pthread_self(), col_max_value, auto_inc, prebuilt->table->name);
+		sql_print_information("%s[%d] [tid: %lu]: col_max_value = %lu, auto_inc = %lu, autoinc_last_value = %lu, table = %s.", __FILE__, __LINE__, pthread_self(), 
+				col_max_value, auto_inc, prebuilt->autoinc_last_value, prebuilt->table->name);
 
 		switch (error) {
 		case DB_DUPLICATE_KEY:
@@ -4912,6 +4913,10 @@ set_max_autoinc:
 					auto_inc = innobase_next_autoinc(
 						auto_inc,
 						need, offset, col_max_value);
+
+					sql_print_information("%s[%d] [tid: %lu]: autoinc_offset = %lu, autoinc_increment = %lu, auto_inc = %lu, table = %s.", __FILE__, __LINE__, pthread_self(), 
+				autoinc_offset, autoinc_increment, auto_inc, prebuilt->table->name);
+
 
 					err = innobase_set_max_autoinc(
 						auto_inc);
