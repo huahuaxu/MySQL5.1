@@ -4860,7 +4860,7 @@ no_commit:
 		/* Get the value that MySQL attempted to store in the table.*/
 		auto_inc = table->next_number_field->val_int();
 
-		sql_print_information("%s[%d] [tid: %lu]: col_max_value = %llu, auto_inc = %llu, table = %s.", __FILE__, __LINE__, pthread_self(), col_max_value, auto_inc, prebuilt->table->name);
+		sql_print_information("%s[%d] [tid: %lu]: col_max_value = %lld, auto_inc = %lld, table = %s.", __FILE__, __LINE__, pthread_self(), col_max_value, auto_inc, prebuilt->table->name);
 
 		switch (error) {
 		case DB_DUPLICATE_KEY:
