@@ -4915,7 +4915,7 @@ set_max_autoinc:
 						need, offset, col_max_value);
 
 					sql_print_information("%s[%d] [tid: %lu]: autoinc_offset = %lu, autoinc_increment = %lu, auto_inc = %lu, table = %s.", __FILE__, __LINE__, pthread_self(), 
-				autoinc_offset, autoinc_increment, auto_inc, prebuilt->table->name);
+						offset, need, auto_inc, prebuilt->table->name);
 
 
 					err = innobase_set_max_autoinc(
