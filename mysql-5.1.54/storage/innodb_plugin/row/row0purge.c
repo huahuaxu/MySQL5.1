@@ -133,6 +133,9 @@ row_purge_remove_clust_if_poss_low(
 
 	index = dict_table_get_first_index(node->table);
 
+	fprintf(stderr, "%s[%d] [tid:%lu] [Purge Redo Log] Removing a delete marked clustered index record {%s}...\n", __FILE__, __LINE__, pthread_self(),
+						index->name);
+
 	pcur = &(node->pcur);
 	btr_cur = btr_pcur_get_btr_cur(pcur);
 
