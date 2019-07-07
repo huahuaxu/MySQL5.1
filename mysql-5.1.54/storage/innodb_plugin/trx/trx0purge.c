@@ -1140,6 +1140,9 @@ trx_purge(void)
 		}
 	}
 
+	fprintf(stderr, "%s[%d] [tid:%lu] srv_dml_needed_delay = %lu.\n", __FILE__, __LINE__, pthread_self(), srv_dml_needed_delay);
+
+	//从全局视图链表中,克隆最老的readview,所有在这个readview开启之前提交的事务所产生的undo都被认为是可以清理的
 	purge_sys->view = read_view_oldest_copy_or_open_new(ut_dulint_zero,
 							    purge_sys->heap);
 	mutex_exit(&kernel_mutex);
@@ -1158,7 +1161,7 @@ trx_purge(void)
 
 	mutex_enter(&kernel_mutex);
 
-	thr = que_fork_start_command(purge_sys->query);
+	thr = que_fork_start_command(purge_sys->query);//挑选一个执行线程
 
 	ut_ad(thr);
 
