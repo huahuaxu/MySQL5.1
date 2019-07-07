@@ -505,6 +505,8 @@ trx_purge_truncate_rseg_history(
 
 	ut_ad(mutex_own(&(purge_sys->mutex)));
 
+	fprintf(stderr, "%s[%d] [tid:%lu] [Purge Redo Log] Truncate the history list about the undo log record..\n", __FILE__, __LINE__, pthread_self());
+
 	mtr_start(&mtr);
 	mutex_enter(&(rseg->mutex));
 

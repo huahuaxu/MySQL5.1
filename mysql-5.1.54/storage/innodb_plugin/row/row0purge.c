@@ -362,11 +362,13 @@ row_purge_del_mark(
 	dtuple_t*	entry;
 	dict_index_t*	index;
 
+	fprintf(stderr, "%s[%d] [tid:%lu] [Purge Redo Log] Purge a delete marking of undo log record...\n", __FILE__, __LINE__, pthread_self());
+
 	ut_ad(node);
 
 	heap = mem_heap_create(1024);
 
-	while (node->index != NULL) {
+	while (node->index != NULL) { //删除二级索引
 		index = node->index;
 
 		/* Build the index entry */
@@ -379,7 +381,7 @@ row_purge_del_mark(
 
 	mem_heap_free(heap);
 
-	row_purge_remove_clust_if_poss(node);
+	row_purge_remove_clust_if_poss(node); //删除聚簇索引
 }
 
 /***********************************************************//**
