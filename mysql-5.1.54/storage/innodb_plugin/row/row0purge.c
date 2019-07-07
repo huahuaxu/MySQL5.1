@@ -253,6 +253,9 @@ row_purge_remove_sec_if_poss_low(
 	log_free_check();
 	mtr_start(&mtr);
 
+	fprintf(stderr, "%s[%d] [tid:%lu] [Purge Redo Log] Removing a secondary index record {%s.%s}...\n", __FILE__, __LINE__, pthread_self(),
+						index->table_name, index->name);
+
 	found = row_search_index_entry(index, entry, mode, &pcur, &mtr);
 
 	if (!found) {
