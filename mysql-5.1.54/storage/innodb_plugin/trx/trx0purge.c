@@ -984,9 +984,11 @@ trx_purge_fetch_next_rec(
 {
 	trx_undo_rec_t*	undo_rec;
 
+	fprintf(stderr, "%s[%d] [tid:%lu] [Purge Redo Log] Fetches a undo log record from the history list...\n", __FILE__, __LINE__, pthread_self());
+
 	mutex_enter(&(purge_sys->mutex));
 
-	if (purge_sys->state == TRX_STOP_PURGE) {
+	if (purge_sys->state == TRX_STOP_PURGE) { //被要求停止purge
 		trx_purge_truncate_if_arr_empty();
 
 		mutex_exit(&(purge_sys->mutex));
@@ -1015,7 +1017,7 @@ trx_purge_fetch_next_rec(
 		}
 	}
 
-	if (purge_sys->n_pages_handled >= purge_sys->handle_limit) {
+	if (purge_sys->n_pages_handled >= purge_sys->handle_limit) { //purge的页已达本次上限
 
 		purge_sys->state = TRX_STOP_PURGE;
 
@@ -1027,7 +1029,7 @@ trx_purge_fetch_next_rec(
 	}
 
 	if (ut_dulint_cmp(purge_sys->purge_trx_no,
-			  purge_sys->view->low_limit_no) >= 0) {
+			  purge_sys->view->low_limit_no) >= 0) {  //已经到达最老读事务的事务提交号
 		purge_sys->state = TRX_STOP_PURGE;
 
 		trx_purge_truncate_if_arr_empty();
@@ -1042,6 +1044,10 @@ trx_purge_fetch_next_rec(
 	ut_dulint_get_low(purge_sys->purge_trx_no),
 	ut_dulint_get_low(purge_sys->purge_undo_no)); */
 
+	fprintf(stderr, "%s[%d] [tid:%lu] [Purge Redo Log] purging trx %lu at undo record %lu.\n", __FILE__, __LINE__, pthread_self(),
+						ut_dulint_get_low(purge_sys->purge_trx_no), ut_dulint_get_low(purge_sys->purge_undo_no));
+
+	
 	*roll_ptr = trx_undo_build_roll_ptr(FALSE, (purge_sys->rseg)->id,
 					    purge_sys->page_no,
 					    purge_sys->offset);
@@ -1090,7 +1096,7 @@ trx_purge(void)
 	/*	que_thr_t*	thr2; */
 	ulint		old_pages_handled;
 
-	fprintf(stderr, "%s[%d] [tid:%lu] Try to purge undo log {n_active_thrs = %lu, srv_max_purge_lag = %lu}...\n", __FILE__, __LINE__, pthread_self(), 
+	fprintf(stderr, "%s[%d] [tid:%lu] [Purge Redo Log] Try to purge undo log {n_active_thrs = %lu, srv_max_purge_lag = %lu}...\n", __FILE__, __LINE__, pthread_self(), 
 						purge_sys->trx->n_active_thrs, srv_max_purge_lag);
 
 	mutex_enter(&(purge_sys->mutex));
@@ -1140,7 +1146,7 @@ trx_purge(void)
 		}
 	}
 
-	fprintf(stderr, "%s[%d] [tid:%lu] srv_dml_needed_delay = %lu.\n", __FILE__, __LINE__, pthread_self(), srv_dml_needed_delay);
+	fprintf(stderr, "%s[%d] [tid:%lu] [Purge Redo Log] srv_dml_needed_delay = %lu.\n", __FILE__, __LINE__, pthread_self(), srv_dml_needed_delay);
 
 	//从全局视图链表中,克隆最老的readview,所有在这个readview开启之前提交的事务所产生的undo都被认为是可以清理的
 	purge_sys->view = read_view_oldest_copy_or_open_new(ut_dulint_zero,
@@ -1179,6 +1185,8 @@ trx_purge(void)
 		fputs("Starting purge\n", stderr);
 	}
 
+	fprintf(stderr, "%s[%d] [tid:%lu] [Purge Redo Log] Starting purge...\n", __FILE__, __LINE__, pthread_self());
+
 	que_run_threads(thr);
 
 	if (srv_print_thread_releases) {
@@ -1187,6 +1195,9 @@ trx_purge(void)
 			"Purge ends; pages handled %lu\n",
 			(ulong) purge_sys->n_pages_handled);
 	}
+
+	fprintf(stderr, "%s[%d] [tid:%lu] [Purge Redo Log] Purge ends{total_pages = %lu, current_page = %lu}.\n", __FILE__, __LINE__, pthread_self(),
+						purge_sys->n_pages_handled, purge_sys->n_pages_handled - old_pages_handled);
 
 	return(purge_sys->n_pages_handled - old_pages_handled);
 }

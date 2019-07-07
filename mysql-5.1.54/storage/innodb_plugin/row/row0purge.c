@@ -688,8 +688,7 @@ row_purge_step(
 	ulint		err;
 #endif /* UNIV_DEBUG */
 
-	fprintf(stderr, "%s[%d] [tid:%lu] Try to purge a single undo log record...\n", __FILE__, __LINE__, pthread_self());
-
+	fprintf(stderr, "%s[%d] [tid:%lu] [Purge Redo Log] Try to purge a single undo log record...\n", __FILE__, __LINE__, pthread_self());
 
 	ut_ad(thr);
 
