@@ -52,6 +52,9 @@ btr_block_get_func(
 {
 	buf_block_t*	block;
 
+	fprintf(stderr, "%s[%d] [tid: %lu]: Try to get the buffer page{space = %lu, page_no = %lu, latch_mode = %lu} and declares its latching order level.\n", 
+					__FILE__, __LINE__, pthread_self(), space, page_no, mode);
+
 	block = buf_page_get_gen(space, zip_size, page_no, mode,
 				 NULL, BUF_GET, file, line, mtr);
 
