@@ -2090,9 +2090,6 @@ loop:
 	}
 
 	if (block == NULL) {
-		
-		fprintf(stderr, "%s[%d] [tid: %lu]: Try to look for the page(space = %lu, page_no = %lu) in the hash table..\n",
-						__FILE__, __LINE__, pthread_self(), space, offset);
 
 		block = (buf_block_t*) buf_page_hash_get(space, offset);
 
