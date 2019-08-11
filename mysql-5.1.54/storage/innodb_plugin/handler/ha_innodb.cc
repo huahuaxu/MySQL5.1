@@ -4696,7 +4696,7 @@ ha_innobase::write_row(
 
 	DBUG_ENTER("ha_innobase::write_row");
 
-	sql_print_information("%s[write_row][%d] [tid: %lu]: Writing a MySQL format record into InnoDB Storage for [%]...", 
+	sql_print_information("%s[write_row][%d] [tid: %lu]: Writing a MySQL format record into InnoDB Storage for [%s]...", 
 					__FILE__, __LINE__, pthread_self(), prebuilt->table->name);
 
 
