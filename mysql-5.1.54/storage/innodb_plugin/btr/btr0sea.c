@@ -593,6 +593,9 @@ btr_search_info_update_slow(
 	ut_ad(!rw_lock_own(&btr_search_latch, RW_LOCK_EX));
 #endif /* UNIV_SYNC_DEBUG */
 
+	fprintf(stderr, "%s[%d] [tid: %lu]: Updates the search info of index(%s.%s)..\n",
+					__FILE__, __LINE__, pthread_self(), cursor->index->table->name, cursor->index->name);
+
 	block = btr_cur_get_block(cursor);
 
 	/* NOTE that the following two function calls do NOT protect
@@ -1254,6 +1257,10 @@ btr_search_build_page_hash_index(
 
 	ut_ad(index);
 	ut_a(!dict_index_is_ibuf(index));
+
+	fprintf(stderr, "%s[%d] [tid: %lu]: Builds a hash index on a page for the (%s.%s) {n_fields = %lu, n_bytes = %lu, left_side = %lu}..\n",
+					__FILE__, __LINE__, pthread_self(), index->table->name, index->name, n_fields, n_bytes, left_side);
+
 
 	table = btr_search_sys->hash_index;
 	page = buf_block_get_frame(block);
