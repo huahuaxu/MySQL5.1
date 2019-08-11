@@ -323,7 +323,7 @@ btr_cur_search_to_nth_level(
 	ulint		level,	/*!< in: the tree level of search */
 	const dtuple_t*	tuple,	/*!< in: data tuple; NOTE: n_fields_cmp in
 				tuple must be set so that it cannot get
-				compared to the node ptr page number field! */
+				compared to the node ptr page number field! */  // 数据
 	ulint		mode,	/*!< in: PAGE_CUR_L, ...;
 				Inserts should always be made using
 				PAGE_CUR_LE to search the position! */

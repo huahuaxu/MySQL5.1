@@ -249,7 +249,7 @@ page_cur_search_with_match(
 /*=======================*/
 	const buf_block_t*	block,	/*!< in: buffer block */
 	const dict_index_t*	index,	/*!< in: record descriptor */
-	const dtuple_t*		tuple,	/*!< in: data tuple */
+	const dtuple_t*		tuple,	/*!< in: data tuple */ //数据值
 	ulint			mode,	/*!< in: PAGE_CUR_L,
 					PAGE_CUR_LE, PAGE_CUR_G, or
 					PAGE_CUR_GE */
@@ -315,6 +315,10 @@ page_cur_search_with_match(
 	ut_a(!page_zip || page_zip_validate(page_zip, page));
 #endif /* UNIV_ZIP_DEBUG */
 
+	fprintf(stderr, "%s[%d] [tid: %lu]: Searches the right position for a page cursor in the index(%s.%s)...\n", 
+					__FILE__, __LINE__, pthread_self(), index->table->name, index->name);
+
+	
 	page_check_dir(page);
 
 #ifdef PAGE_CUR_ADAPT
