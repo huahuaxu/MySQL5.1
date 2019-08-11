@@ -222,8 +222,8 @@ btr_cur_latch_leaves(
 
 	ut_ad(page && mtr);
 
-	fprintf(stderr, "%s[%d] [tid: %lu]: Latches the leaf page(pace = %lu, page_no = %lu)..\n",
-						__FILE__, __LINE__, pthread_self(), space, page_no);
+	fprintf(stderr, "%s[%d] [tid: %lu]: Latches the leaf page(pace = %lu, page_no = %lu, latch_mode = %lu)..\n",
+						__FILE__, __LINE__, pthread_self(), space, page_no, latch_mode);
 
 
 	switch (latch_mode) {
