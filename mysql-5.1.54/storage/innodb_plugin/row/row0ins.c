@@ -2458,7 +2458,7 @@ row_ins_step(
 
 	node = thr->run_node;
 	
-	fprintf(stderr, "%s[%d] [tid: %lu]: Inserting a row to the table [%s]...\n", __FILE__, __LINE__, pthread_self(), node->table->name);
+	fprintf(stderr, "%s[row_ins_step][%d] [tid: %lu]: Inserting a row to the table [%s]...\n", __FILE__, __LINE__, pthread_self(), node->table->name);
 
 	ut_ad(que_node_get_type(node) == QUE_NODE_INSERT);
 

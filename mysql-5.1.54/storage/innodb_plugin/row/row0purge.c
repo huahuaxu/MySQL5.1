@@ -374,7 +374,9 @@ row_purge_del_mark(
 
 	heap = mem_heap_create(1024);
 
-	while (node->index != NULL) { //删除二级索引
+	//首先根据undo记录构造所有二级索引的搜索键,找到对应的delete记录,并真正删除.
+	//注意: 由于必须删除二级索引中的一项,因此undo中必须将所有二级索引对应的列保存,哪怕这些列并未被更新(或者是删除操作)
+	while (node->index != NULL) {
 		index = node->index;
 
 		/* Build the index entry */
@@ -387,7 +389,8 @@ row_purge_del_mark(
 
 	mem_heap_free(heap);
 
-	row_purge_remove_clust_if_poss(node); //删除聚簇索引
+	//最后删除聚簇索引中的delete记录,如果delete操作,或者是update操作,但是修改主键,都会产生聚簇索引delete项
+	row_purge_remove_clust_if_poss(node);
 }
 
 /***********************************************************//**
@@ -628,6 +631,7 @@ row_purge(
 
 	trx = thr_get_trx(thr);
 
+	//获取一条可purge的redo log记录
 	node->undo_rec = trx_purge_fetch_next_rec(&roll_ptr,
 						  &(node->reservation),
 						  node->heap);
@@ -644,6 +648,7 @@ row_purge(
 	if (node->undo_rec == &trx_purge_dummy_rec) {
 		purge_needed = FALSE;
 	} else {
+		//解析得到的undo记录
 		purge_needed = row_purge_parse_undo_rec(node, &updated_extern,
 							thr);
 		/* If purge_needed == TRUE, we must also remember to unfreeze
@@ -657,7 +662,7 @@ row_purge(
 			dict_table_get_first_index(node->table));
 
 		if (node->rec_type == TRX_UNDO_DEL_MARK_REC) {
-			row_purge_del_mark(node);
+			row_purge_del_mark(node); //将标识为delete的索引项删除
 
 		} else if (updated_extern
 			   || node->rec_type == TRX_UNDO_UPD_EXIST_REC) {

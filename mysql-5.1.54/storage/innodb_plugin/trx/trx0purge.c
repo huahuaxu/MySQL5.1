@@ -778,6 +778,7 @@ trx_purge_choose_next_log(void)
 
 	min_rseg = NULL;
 
+	//遍历所有的rollback segment，取出其中最早提交的事务
 	while (rseg) {
 		mutex_enter(&(rseg->mutex));
 
@@ -816,6 +817,7 @@ trx_purge_choose_next_log(void)
 
 		rec = &trx_purge_dummy_rec;
 	} else {
+		//purge操作的顺序,与按照事务操作的顺序一致,因此取出事务的第一条undo记录,而不是最后一条
 		rec = trx_undo_get_first_rec(space, zip_size, page_no, offset,
 					     RW_S_LATCH, &mtr);
 		if (rec == NULL) {
@@ -1030,8 +1032,10 @@ trx_purge_fetch_next_rec(
 		return(NULL);
 	}
 
+	//如果当前最老的历史事务,其提交的序列号要大于目前系统最老未提及事务创建ReadView时获取的trx_no,则说明当前历史事务还不能够被purge,
+	//需要等待系统最老事务提交之后才能被purge.
 	if (ut_dulint_cmp(purge_sys->purge_trx_no,
-			  purge_sys->view->low_limit_no) >= 0) {  //已经到达最老读事务的事务提交号
+			  purge_sys->view->low_limit_no) >= 0) {
 		purge_sys->state = TRX_STOP_PURGE;
 
 		trx_purge_truncate_if_arr_empty();
